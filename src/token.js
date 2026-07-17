@@ -1,6 +1,7 @@
 import { access, readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import WebSocket from 'ws'
 import { assertServerCompatibility } from './compatibility.js'
 import { normalizeUrl, readConfig, writeConfig } from './config.js'
 
@@ -67,6 +68,35 @@ async function requestJson(url, options) {
   return { response, body }
 }
 
+export async function exchangeSocketToken({ url, token, serverPassword, timeout = 5000 }) {
+  if (!token) return null
+  const socketUrl = new URL('socket/websocket', url.replace(/^http/, 'ws'))
+  const headers = serverPassword ? { 'X-Server-Password': serverPassword } : undefined
+  return new Promise(resolve => {
+    const socket = new WebSocket(socketUrl, { headers })
+    let settled = false
+    const finish = value => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      socket.close()
+      resolve(value)
+    }
+    const timer = setTimeout(() => {
+      socket.terminate()
+      finish(null)
+    }, timeout)
+    socket.on('open', () => socket.send(`auth ${token}`))
+    socket.on('message', data => {
+      const match = data.toString().match(/^auth (ok|failed)(?: (.+))?$/)
+      if (!match) return
+      finish(match[1] === 'ok' ? (match[2] || token) : null)
+    })
+    socket.on('error', () => finish(null))
+    socket.on('unexpected-response', () => finish(null))
+  })
+}
+
 export async function validateToken({ url, token, serverPassword, username }) {
   if (!token) return null
   const headers = { 'X-Token': token, 'X-Username': token }
@@ -84,7 +114,7 @@ async function validateServer({ url, token, serverPassword }) {
   return assertServerCompatibility(body)
 }
 
-async function importDesktopToken({ connection, storagePath }) {
+async function findDesktopSession({ connection, storagePath }) {
   const path = await findStoragePath(storagePath)
   const buffers = await readStorage(path)
   const candidates = extractSessionCandidates(buffers)
@@ -102,11 +132,18 @@ async function importDesktopToken({ connection, storagePath }) {
     const { response, body } = await requestJson(`${baseUrl}/api/auth/me`, { headers })
     if (!response.ok || body.error) continue
     if (connection.username && body.username !== connection.username) continue
-    sessionToken = candidate
+    sessionToken = response.headers.get('x-token') || candidate
     identity = body
     break
   }
   if (!sessionToken) throw new Error('No active desktop session matched this server. Open Screeps, connect to it, leave it running, then retry.')
+
+  return { identity, serverPassword, sessionToken }
+}
+
+async function importDesktopToken({ connection, storagePath }) {
+  const baseUrl = connection.url.replace(/\/$/, '')
+  const { identity, serverPassword, sessionToken } = await findDesktopSession({ connection, storagePath })
 
   const headers = {
     'Content-Type': 'application/json',
@@ -121,6 +158,9 @@ async function importDesktopToken({ connection, storagePath }) {
   })
   if (!response.ok || !body.token) throw new Error(`The server did not create a persistent API token (${body.error || response.status}).`)
   await validateServer({ url: baseUrl, token: body.token, serverPassword })
+  const latestSessionToken = response.headers.get('x-token') || sessionToken
+  const liveToken = await exchangeSocketToken({ url: baseUrl, token: latestSessionToken, serverPassword })
+  if (!liveToken) throw new Error('The desktop session worked over HTTP but the server rejected its live connection.')
 
   const config = await readConfig()
   config.current = baseUrl
@@ -130,11 +170,23 @@ async function importDesktopToken({ connection, storagePath }) {
     url: baseUrl,
     username: identity.username || connection.username,
     token: body.token,
+    liveToken,
     ...(serverPassword ? { serverPassword } : {})
   }
   delete config.servers[baseUrl].password
   await writeConfig(config)
   return { username: identity.username }
+}
+
+async function importDesktopLiveToken({ connection, storagePath }) {
+  const { identity, serverPassword, sessionToken } = await findDesktopSession({ connection, storagePath })
+  const liveToken = await exchangeSocketToken({
+    url: connection.url,
+    token: sessionToken,
+    serverPassword
+  })
+  if (!liveToken) throw new Error('The server rejected the active desktop session for live updates.')
+  return { identity, liveToken, serverPassword }
 }
 
 export async function login({ server, username, serverPassword, shard, storagePath, onDesktopRequired }) {
@@ -153,9 +205,26 @@ export async function login({ server, username, serverPassword, shard, storagePa
 
   if (identity) {
     await validateServer({ ...connection, token: suppliedToken })
+    let liveToken = await exchangeSocketToken({
+      ...connection,
+      token: connection.liveToken || suppliedToken
+    })
+    let liveServerPassword = connection.serverPassword
+    if (!liveToken) {
+      if (onDesktopRequired) await onDesktopRequired(url)
+      const imported = await importDesktopLiveToken({ connection, storagePath })
+      liveToken = imported.liveToken
+      liveServerPassword = imported.serverPassword
+    }
     config.current = url
     config.servers ||= {}
-    config.servers[url] = { ...connection, username: identity.username, token: suppliedToken }
+    config.servers[url] = {
+      ...connection,
+      username: identity.username,
+      token: suppliedToken,
+      liveToken,
+      ...(liveServerPassword ? { serverPassword: liveServerPassword } : {})
+    }
     delete config.servers[url].password
     await writeConfig(config)
     return { username: identity.username }

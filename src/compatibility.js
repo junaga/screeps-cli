@@ -20,7 +20,7 @@ export function formatServerSummary({ url, auth, version, live }) {
     `Server:   ${url}`,
     `Protocol: ${version.protocol} (supported)`,
     `Auth:     ${auth.name}${auth.version ? ` ${auth.version}` : ''}`,
-    `Live:     ${live ? 'WebSocket' : 'HTTP polling'}`,
+    `Live:     ${live ? 'WebSocket' : 'unavailable'}`,
     `Features: ${features || 'none reported'}`,
     `CLI:      screeps ${CLI_VERSION} using ${API_CLIENT.name} ${API_CLIENT.version}`
   ].join('\n')

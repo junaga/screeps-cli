@@ -99,29 +99,7 @@ async function watchRoom(api, room, options, ownUserId) {
     })
   } catch {
     api.socket.disconnect()
-    process.stderr.write('Live socket unavailable; watching room ticks over HTTP.\n')
-    let stopped = false
-    const stop = () => { stopped = true }
-    process.once('SIGINT', stop)
-    process.once('SIGTERM', stop)
-    try {
-      while (!stopped) {
-        const [objects, time] = await Promise.all([
-          api.gameRoomObjects(room, options.shard),
-          api.gameTime(options.shard)
-        ])
-        if (time.time !== lastTick) {
-          state.clear()
-          for (const object of objects.objects) state.set(object._id, object)
-          lastTick = time.time
-          draw()
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      }
-    } finally {
-      process.removeListener('SIGINT', stop)
-      process.removeListener('SIGTERM', stop)
-    }
+    throw new Error('Live room updates are unavailable. Run screeps login to refresh the live session.')
   }
 }
 

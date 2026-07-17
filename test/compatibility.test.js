@@ -23,5 +23,5 @@ test('formats server and client versions for terminal users', () => {
   assert.match(summary, /Protocol: 14 \(supported\)/)
   assert.match(summary, /screeps-api 2\.1\.0/)
   assert.match(summary, /market 1/)
-  assert.match(summary, /HTTP polling/)
+  assert.match(summary, /unavailable/)
 })
