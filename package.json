@@ -1,20 +1,20 @@
 {
   "name": "screeps-terminal",
   "version": "0.1.0",
-  "description": "A clean, complete terminal client for Screeps World",
+  "description": "Play Screeps World from the terminal",
   "type": "module",
   "bin": {
     "screeps": "./bin/screeps.js"
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check bin/screeps.js && node --check src/*.js && node --test"
+    "check": "node --check bin/screeps.js && node --check src/*.js && node --check bot/*.js && node --test"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x || 24.x"
   },
   "dependencies": {
-    "commander": "^14.0.2",
-    "screeps-api": "^2.1.0"
+    "commander": "14.0.3",
+    "screeps-api": "2.1.0"
   }
 }

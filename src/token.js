@@ -1,6 +1,7 @@
 import { access, readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { assertServerCompatibility } from './compatibility.js'
 import { normalizeUrl, readConfig, writeConfig } from './config.js'
 
 export function defaultClientStoragePaths() {
@@ -75,6 +76,14 @@ export async function validateToken({ url, token, serverPassword, username }) {
   return body
 }
 
+async function validateServer({ url, token, serverPassword }) {
+  const headers = { 'X-Token': token, 'X-Username': token }
+  if (serverPassword) headers['X-Server-Password'] = serverPassword
+  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/version`, { headers })
+  if (!response.ok || body.error) throw new Error(`Cannot inspect the Screeps server (${body.error || response.status}).`)
+  return assertServerCompatibility(body)
+}
+
 async function importDesktopToken({ connection, storagePath }) {
   const path = await findStoragePath(storagePath)
   const buffers = await readStorage(path)
@@ -111,6 +120,7 @@ async function importDesktopToken({ connection, storagePath }) {
     body: JSON.stringify({ type: 'full', description: 'screeps-terminal CLI' })
   })
   if (!response.ok || !body.token) throw new Error(`The server did not create a persistent API token (${body.error || response.status}).`)
+  await validateServer({ url: baseUrl, token: body.token, serverPassword })
 
   const config = await readConfig()
   config.current = baseUrl
@@ -127,7 +137,7 @@ async function importDesktopToken({ connection, storagePath }) {
   return { username: identity.username }
 }
 
-export async function login({ server, username, serverPassword, shard, storagePath }) {
+export async function login({ server, username, serverPassword, shard, storagePath, onDesktopRequired }) {
   const url = normalizeUrl(server)
   const config = await readConfig()
   const saved = config.servers?.[url] || {}
@@ -142,6 +152,7 @@ export async function login({ server, username, serverPassword, shard, storagePa
   const identity = await validateToken({ ...connection, token: suppliedToken })
 
   if (identity) {
+    await validateServer({ ...connection, token: suppliedToken })
     config.current = url
     config.servers ||= {}
     config.servers[url] = { ...connection, username: identity.username, token: suppliedToken }
@@ -150,6 +161,8 @@ export async function login({ server, username, serverPassword, shard, storagePa
     return { username: identity.username }
   }
   if (process.env.SCREEPS_TOKEN) throw new Error('SCREEPS_TOKEN was rejected by this server or belongs to another user.')
+
+  if (onDesktopRequired) await onDesktopRequired(url)
 
   return importDesktopToken({ connection, storagePath })
 }

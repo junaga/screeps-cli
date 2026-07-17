@@ -1,8 +1,24 @@
 import { createClient, output } from './client.js'
+import { API_CLIENT, CLI_VERSION, assertServerCompatibility, formatServerSummary } from './compatibility.js'
 import { normalizeUrl } from './config.js'
 import { parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, mergeRoomObjects, renderRoom, renderWorldMap, roomsAround, summarizeObjects } from './room.js'
 import { login } from './token.js'
+import { createInterface } from 'node:readline/promises'
+import { stdin, stderr } from 'node:process'
+
+async function promptForDesktopLogin(url) {
+  if (!stdin.isTTY) {
+    throw new Error(`Login needs an interactive terminal. Open Screeps, connect to ${url}, then run this command again.`)
+  }
+  stderr.write(`\nOpen Screeps and connect to ${url}.\nLog in, keep the game open, then return here.\n`)
+  const prompt = createInterface({ input: stdin, output: stderr })
+  try {
+    await prompt.question('Press Enter when the game is connected... ')
+  } finally {
+    prompt.close()
+  }
+}
 
 function connectionOptions(command) {
   let current = command
@@ -15,7 +31,8 @@ function withClient(action, clientOptions = {}) {
     const command = args.at(-1)
     const options = { ...connectionOptions(command), ...command.opts() }
     const context = await createClient({ ...options, ...clientOptions })
-    return action(context, ...args.slice(0, -1), options, command)
+    const operands = args.slice(0, command.registeredArguments.length)
+    return action(context, ...operands, options, command)
   }
 }
 
@@ -54,45 +71,69 @@ async function watchRoom(api, room, options, ownUserId) {
     output(renderRoom({ name: room, terrain, objects: [...state.values()], ownUserId, gameTime: lastTick, color: options.color }))
   }
   draw()
-  await api.socket.subscribeRoom(room, options.shard, draw)
-  await api.socket.connect()
-  await new Promise(resolve => {
-    const stop = () => { api.socket.disconnect(); resolve() }
+  try {
+    await api.socket.subscribeRoom(room, options.shard, draw)
+    await api.socket.connect()
+    await new Promise(resolve => {
+      const stop = () => { api.socket.disconnect(); resolve() }
+      process.once('SIGINT', stop)
+      process.once('SIGTERM', stop)
+    })
+  } catch {
+    api.socket.disconnect()
+    process.stderr.write('Live socket unavailable; watching room ticks over HTTP.\n')
+    let stopped = false
+    const stop = () => { stopped = true }
     process.once('SIGINT', stop)
     process.once('SIGTERM', stop)
-  })
+    try {
+      while (!stopped) {
+        const [objects, time] = await Promise.all([
+          api.gameRoomObjects(room, options.shard),
+          api.gameTime(options.shard)
+        ])
+        if (time.time !== lastTick) {
+          state.clear()
+          for (const object of objects.objects) state.set(object._id, object)
+          lastTick = time.time
+          draw()
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    } finally {
+      process.removeListener('SIGINT', stop)
+      process.removeListener('SIGTERM', stop)
+    }
+  }
 }
 
 export async function run(program, argv) {
   program
     .name('screeps')
     .description('Play Screeps World from the terminal')
-    .version('0.1.0')
+    .version(CLI_VERSION)
     .option('-s, --shard <name>', 'world shard')
     .option('--json', 'print machine-readable JSON')
     .option('--no-color', 'disable ANSI color')
     .showSuggestionAfterError()
 
   program.command('login <server>')
-    .description('log in and make a Screeps server active')
+    .description('connect this CLI to a Screeps server')
     .addHelpText('after', `
-First login to a Steam-authenticated private server:
-  1. Open Screeps and connect to the server.
-  2. Leave the game running.
-  3. Run: screeps login host:port
+On first login, this command waits while you open Screeps and connect to the
+server. It then imports that session and saves a dedicated CLI token.
 
-You only need to log in once per server. Normal commands use the active
-saved server. Logging in again switches servers or revalidates the token.
-
-To use an existing API token:
+To skip the desktop flow with an existing token:
   SCREEPS_TOKEN=... screeps login host:port
 
-Credentials are stored in ~/.config/screeps-cli/config.json (mode 0600).`)
+The token is saved in ~/.config/screeps-cli/config.json with mode 0600.
+Your Steam and account passwords are not stored.`)
     .action(async (server, _options, command) => {
       const rootOptions = connectionOptions(command)
       const result = await login({
         server,
         shard: rootOptions.shard,
+        onDesktopRequired: promptForDesktopLogin,
       })
       output(`Authenticated as ${result.username} on ${normalizeUrl(server)}. This server is now active.`)
     })
@@ -101,7 +142,10 @@ Credentials are stored in ~/.config/screeps-cli/config.json (mode 0600).`)
     .description('show server version, features, and authentication method')
     .action(withClient(async ({ api, connection }, options) => {
       const [version, authmod] = await Promise.all([api.version(), api.authmod()])
-      output({ url: connection.url, auth: authmod, version }, options)
+      assertServerCompatibility(version)
+      const result = { cli: CLI_VERSION, client: API_CLIENT, url: connection.url, auth: authmod, version }
+      if (options.json) output(result, { json: true })
+      else output(formatServerSummary(result))
     }, { requireAuth: false }))
 
   program.command('status')
@@ -144,6 +188,7 @@ Credentials are stored in ~/.config/screeps-cli/config.json (mode 0600).`)
 
   const memory = program.command('memory').description('read and write game Memory')
   memory.command('get [path]')
+    .description('show all Memory or one path')
     .action(withClient(async ({ api }, path, options) => output(await api.userMemoryGet(path, options.shard), { json: true })))
   memory.command('set <path> <value>')
     .description('set JSON or string data at a Memory path')
@@ -151,15 +196,17 @@ Credentials are stored in ~/.config/screeps-cli/config.json (mode 0600).`)
 
   const code = program.command('code').description('download and deploy game code')
   code.command('pull [directory]')
+    .description('download a code branch into a directory')
     .option('-b, --branch <name>', 'code branch', 'default')
-    .action(withClient(async ({ api }, directory = 'src', options) => {
+    .action(withClient(async ({ api }, directory = 'bot', options) => {
       const response = await api.userCodeGet(options.branch)
       const paths = await writeModules(directory, response.modules)
       output(`Wrote ${paths.length} modules to ${directory}.`)
     }))
   code.command('push [directory]')
+    .description('deploy JavaScript and WASM modules from a directory')
     .option('-b, --branch <name>', 'code branch', 'default')
-    .action(withClient(async ({ api }, directory = 'src', options) => {
+    .action(withClient(async ({ api }, directory = 'bot', options) => {
       const modules = await readModules(directory)
       await api.userCodeSet({ branch: options.branch, modules })
       output(`Deployed ${Object.keys(modules).length} modules to branch "${options.branch}".`)
@@ -177,16 +224,23 @@ Credentials are stored in ~/.config/screeps-cli/config.json (mode 0600).`)
         for (const line of event.data.messages?.log || []) output(`${shard}${line}`)
         for (const result of event.data.messages?.results || []) output(`${shard}< ${result}`)
       })
-      await api.socket.connect()
+      try {
+        await api.socket.connect()
+      } catch {
+        api.socket.disconnect()
+        throw new Error('This server rejected live console authentication. Console streaming is unavailable; one-time expressions still work.')
+      }
       await new Promise(resolve => process.once('SIGINT', () => { api.socket.disconnect(); resolve() }))
     }))
 
   const flag = program.command('flag').description('manage flags')
   flag.command('create <room> <x> <y> <name>')
+    .description('place a named flag in a room')
     .option('--primary <number>', 'primary color', Number, 1)
     .option('--secondary <number>', 'secondary color', Number, 1)
     .action(withClient(async ({ api }, room, x, y, name, options) => output(await api.gameCreateFlag(room, Number(x), Number(y), name, options.primary, options.secondary, options.shard), { json: true })))
   flag.command('remove <room> <name>')
+    .description('remove a flag from a room')
     .action(withClient(async ({ api }, room, name, options) => output(await api.gameRemoveFlag(room, name, options.shard), { json: true })))
 
   program.command('construct <room> <x> <y> <type>')
@@ -199,15 +253,25 @@ Credentials are stored in ~/.config/screeps-cli/config.json (mode 0600).`)
     .action(withClient(async ({ api }, room, x, y, name, options) => output(await api.gamePlaceSpawn(room, Number(x), Number(y), name, options.shard), { json: true })))
 
   const messages = program.command('messages').description('read and send player messages')
-  messages.command('list [user]').action(withClient(async ({ api }, user, options) => output(user ? await api.userMessagesList(user) : await api.userMessagesIndex(), options)))
-  messages.command('send <user> <text>').action(withClient(async ({ api }, user, text) => output(await api.userMessagesSend(user, text), { json: true })))
+  messages.command('list [user]')
+    .description('show conversations or messages with one player')
+    .action(withClient(async ({ api }, user, options) => output(user ? await api.userMessagesList(user) : await api.userMessagesIndex(), options)))
+  messages.command('send <user> <text>')
+    .description('send a message to a player')
+    .action(withClient(async ({ api }, user, text) => output(await api.userMessagesSend(user, text), { json: true })))
 
   const market = program.command('market').description('inspect the market')
-  market.command('orders <resource>').action(withClient(async ({ api }, resource, options) => output(await api.gameMarketOrders(resource, options.shard), options)))
-  market.command('mine').action(withClient(async ({ api }, options) => output(await api.gameMarketMyOrders(), options)))
-  market.command('history [page]').action(withClient(async ({ api }, page, options) => output(await api.userMoneyHistory(page == null ? 0 : Number(page)), options)))
+  market.command('orders <resource>')
+    .description('show buy and sell orders for a resource')
+    .action(withClient(async ({ api }, resource, options) => output(await api.gameMarketOrders(resource, options.shard), options)))
+  market.command('mine')
+    .description('show your active market orders')
+    .action(withClient(async ({ api }, options) => output(await api.gameMarketMyOrders(), options)))
+  market.command('history [page]')
+    .description('show your transaction history')
+    .action(withClient(async ({ api }, page, options) => output(await api.userMoneyHistory(page == null ? 0 : Number(page)), options)))
 
-  program.command('raw <method> <path> [params]')
+  program.command('raw <method> <path> [params]', { hidden: true })
     .description('call any Screeps endpoint; params is a JSON object')
     .action(withClient(async ({ api }, method, path, params, options) => {
       const endpoint = path.startsWith('/api/') ? path : `/api/${path.replace(/^\//, '')}`
