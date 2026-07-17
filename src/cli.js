@@ -1,6 +1,7 @@
 import { createClient, output } from './client.js'
 import { API_CLIENT, CLI_VERSION, assertServerCompatibility, formatServerSummary } from './compatibility.js'
 import { normalizeUrl } from './config.js'
+import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatObjects, formatRooms, formatStatus } from './format.js'
 import { parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, mergeRoomObjects, renderRoom, renderWorldMap, roomsAround, summarizeObjects } from './room.js'
 import { login } from './token.js'
@@ -17,6 +18,23 @@ async function promptForDesktopLogin(url) {
     await prompt.question('Press Enter when the game is connected... ')
   } finally {
     prompt.close()
+  }
+}
+
+function printResult(response, sentence, options) {
+  if (response?.error || response?.ok === 0) throw new Error(response.error || 'The game rejected the action.')
+  if (options.json) output(response, { json: true })
+  else output(sentence)
+}
+
+async function supportsLiveSocket(api) {
+  try {
+    await api.socket.connect()
+    return true
+  } catch {
+    return false
+  } finally {
+    api.socket.disconnect()
   }
 }
 
@@ -51,7 +69,7 @@ async function renderOnce(api, room, options, ownUserId) {
     gameTime: timeResponse.time,
     color: options.color
   }))
-  if (options.details) output(summarizeObjects(objectResponse.objects, objectResponse.users), { json: true })
+  if (options.details) output(formatObjects(summarizeObjects(objectResponse.objects, objectResponse.users)))
 }
 
 async function watchRoom(api, room, options, ownUserId) {
@@ -116,18 +134,13 @@ export async function run(program, argv) {
     .option('--json', 'print machine-readable JSON')
     .option('--no-color', 'disable ANSI color')
     .showSuggestionAfterError()
+    .addHelpText('after', `
+Examples:
+  screeps status
+  screeps room E4S1 --watch --details`)
 
   program.command('login <server>')
     .description('connect this CLI to a Screeps server')
-    .addHelpText('after', `
-On first login, this command waits while you open Screeps and connect to the
-server. It then imports that session and saves a dedicated CLI token.
-
-To skip the desktop flow with an existing token:
-  SCREEPS_TOKEN=... screeps login host:port
-
-The token is saved in ~/.config/screeps-cli/config.json with mode 0600.
-Your Steam and account passwords are not stored.`)
     .action(async (server, _options, command) => {
       const rootOptions = connectionOptions(command)
       const result = await login({
@@ -139,34 +152,38 @@ Your Steam and account passwords are not stored.`)
     })
 
   program.command('server')
-    .description('show server version, features, and authentication method')
+    .description('show server compatibility')
     .action(withClient(async ({ api, connection }, options) => {
-      const [version, authmod] = await Promise.all([api.version(), api.authmod()])
+      const [version, authmod, live] = await Promise.all([api.version(), api.authmod(), supportsLiveSocket(api)])
       assertServerCompatibility(version)
-      const result = { cli: CLI_VERSION, client: API_CLIENT, url: connection.url, auth: authmod, version }
+      const result = { cli: CLI_VERSION, client: API_CLIENT, url: connection.url, auth: authmod, live, version }
       if (options.json) output(result, { json: true })
       else output(formatServerSummary(result))
     }, { requireAuth: false }))
 
   program.command('status')
-    .description('show account and world status')
+    .description('show your player status')
     .action(withClient(async ({ api, connection, shard }, options) => {
       const me = await api.authMe()
       const [version, world, time, rooms] = await Promise.all([
         api.version(), api.userWorldStatus(), api.gameTime(shard), api.userRooms(me._id)
       ])
-      output({ url: connection.url, shard, tick: time.time, version, user: me, world, rooms }, options)
+      const result = { url: connection.url, shard, tick: time.time, version, user: me, world, rooms }
+      if (options.json) output(result, { json: true })
+      else output(formatStatus(result))
     }))
 
   program.command('rooms')
-    .description('list your rooms')
+    .description('show your claimed rooms')
     .action(withClient(async ({ api }, options) => {
       const me = await api.authMe()
-      output(await api.userRooms(me._id), options)
+      const response = await api.userRooms(me._id)
+      if (options.json) output(response, { json: true })
+      else output(formatRooms(response))
     }))
 
   program.command('room <name>')
-    .description('render a room as a 50×50 terminal map')
+    .description('show a room')
     .option('-w, --watch', 'redraw on every live room update')
     .option('-d, --details', 'also print object details')
     .action(withClient(async ({ api }, room, options) => {
@@ -176,7 +193,7 @@ Your Steam and account passwords are not stored.`)
     }))
 
   program.command('map <center> [radius]')
-    .description('render world ownership around a room')
+    .description('show the world around a room')
     .action(withClient(async ({ api }, center, radius = '5', options) => {
       const numericRadius = Number(radius)
       if (!Number.isInteger(numericRadius) || numericRadius < 0 || numericRadius > 20) throw new Error('Radius must be an integer from 0 to 20')
@@ -186,7 +203,7 @@ Your Steam and account passwords are not stored.`)
       else output(renderWorldMap(center, numericRadius, response))
     }))
 
-  const memory = program.command('memory').description('read and write game Memory')
+  const memory = program.command('memory').description('inspect game Memory')
   memory.command('get [path]')
     .description('show all Memory or one path')
     .action(withClient(async ({ api }, path, options) => output(await api.userMemoryGet(path, options.shard), { json: true })))
@@ -194,7 +211,7 @@ Your Steam and account passwords are not stored.`)
     .description('set JSON or string data at a Memory path')
     .action(withClient(async ({ api }, path, value, options) => output(await api.userMemorySet(path, parseValue(value), options.shard), { json: true })))
 
-  const code = program.command('code').description('download and deploy game code')
+  const code = program.command('code').description('manage game code')
   code.command('pull [directory]')
     .description('download a code branch into a directory')
     .option('-b, --branch <name>', 'code branch', 'default')
@@ -213,7 +230,7 @@ Your Steam and account passwords are not stored.`)
     }))
 
   program.command('console [expression]')
-    .description('evaluate an expression and/or follow the game console')
+    .description('run game JavaScript')
     .option('-f, --follow', 'stream console messages')
     .action(withClient(async ({ api }, expression, options) => {
       if (expression) output(await api.userConsole(expression, options.shard), { json: true })
@@ -234,42 +251,74 @@ Your Steam and account passwords are not stored.`)
     }))
 
   const flag = program.command('flag').description('manage flags')
-  flag.command('create <room> <x> <y> <name>')
+  flag.command('place <name> <room> <x> <y>')
     .description('place a named flag in a room')
     .option('--primary <number>', 'primary color', Number, 1)
     .option('--secondary <number>', 'secondary color', Number, 1)
-    .action(withClient(async ({ api }, room, x, y, name, options) => output(await api.gameCreateFlag(room, Number(x), Number(y), name, options.primary, options.secondary, options.shard), { json: true })))
-  flag.command('remove <room> <name>')
+    .action(withClient(async ({ api }, name, room, x, y, options) => {
+      const response = await api.gameCreateFlag(room, Number(x), Number(y), name, options.primary, options.secondary, options.shard)
+      printResult(response, `Placed flag ${name} at ${room} ${x},${y}.`, options)
+    }))
+  flag.command('remove <name> <room>')
     .description('remove a flag from a room')
-    .action(withClient(async ({ api }, room, name, options) => output(await api.gameRemoveFlag(room, name, options.shard), { json: true })))
+    .action(withClient(async ({ api }, name, room, options) => {
+      const response = await api.gameRemoveFlag(room, name, options.shard)
+      printResult(response, `Removed flag ${name} from ${room}.`, options)
+    }))
 
-  program.command('construct <room> <x> <y> <type>')
+  program.command('build <type> <room> <x> <y>')
     .description('place a construction site')
     .option('--name <name>', 'optional structure name')
-    .action(withClient(async ({ api }, room, x, y, type, options) => output(await api.gameCreateConstruction(room, Number(x), Number(y), type, options.name, options.shard), { json: true })))
+    .action(withClient(async ({ api }, type, room, x, y, options) => {
+      const response = await api.gameCreateConstruction(room, Number(x), Number(y), type, options.name, options.shard)
+      printResult(response, `Placed ${type} construction at ${room} ${x},${y}.`, options)
+    }))
 
-  program.command('place-spawn <room> <x> <y> [name]')
-    .description('place the initial spawn')
-    .action(withClient(async ({ api }, room, x, y, name, options) => output(await api.gamePlaceSpawn(room, Number(x), Number(y), name, options.shard), { json: true })))
+  const spawn = program.command('spawn').description('manage spawns')
+  spawn.command('place <room> <x> <y> [name]')
+    .description('place your first spawn')
+    .action(withClient(async ({ api }, room, x, y, name, options) => {
+      const response = await api.gamePlaceSpawn(room, Number(x), Number(y), name, options.shard)
+      printResult(response, `Placed spawn${name ? ` ${name}` : ''} at ${room} ${x},${y}.`, options)
+    }))
 
-  const messages = program.command('messages').description('read and send player messages')
-  messages.command('list [user]')
+  const message = program.command('message').description('message other players')
+  message.command('list [user]')
     .description('show conversations or messages with one player')
-    .action(withClient(async ({ api }, user, options) => output(user ? await api.userMessagesList(user) : await api.userMessagesIndex(), options)))
-  messages.command('send <user> <text>')
+    .action(withClient(async ({ api }, user, options) => {
+      const response = user ? await api.userMessagesList(user) : await api.userMessagesIndex()
+      if (options.json) output(response, { json: true })
+      else output(formatMessages(response))
+    }))
+  message.command('send <user> <text>')
     .description('send a message to a player')
-    .action(withClient(async ({ api }, user, text) => output(await api.userMessagesSend(user, text), { json: true })))
+    .action(withClient(async ({ api }, user, text, options) => {
+      const response = await api.userMessagesSend(user, text)
+      printResult(response, `Sent message to ${user}.`, options)
+    }))
 
-  const market = program.command('market').description('inspect the market')
+  const market = program.command('market').description('browse the market')
   market.command('orders <resource>')
     .description('show buy and sell orders for a resource')
-    .action(withClient(async ({ api }, resource, options) => output(await api.gameMarketOrders(resource, options.shard), options)))
-  market.command('mine')
+    .action(withClient(async ({ api }, resource, options) => {
+      const response = await api.gameMarketOrders(resource, options.shard)
+      if (options.json) output(response, { json: true })
+      else output(formatMarketOrders(response, resource))
+    }))
+  market.command('my-orders')
     .description('show your active market orders')
-    .action(withClient(async ({ api }, options) => output(await api.gameMarketMyOrders(), options)))
+    .action(withClient(async ({ api }, options) => {
+      const response = await api.gameMarketMyOrders()
+      if (options.json) output(response, { json: true })
+      else output(formatMyOrders(response))
+    }))
   market.command('history [page]')
     .description('show your transaction history')
-    .action(withClient(async ({ api }, page, options) => output(await api.userMoneyHistory(page == null ? 0 : Number(page)), options)))
+    .action(withClient(async ({ api }, page, options) => {
+      const response = await api.userMoneyHistory(page == null ? 0 : Number(page))
+      if (options.json) output(response, { json: true })
+      else output(formatMarketHistory(response))
+    }))
 
   program.command('raw <method> <path> [params]', { hidden: true })
     .description('call any Screeps endpoint; params is a JSON object')

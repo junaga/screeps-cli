@@ -12,7 +12,7 @@ export function assertServerCompatibility(version) {
   return version
 }
 
-export function formatServerSummary({ url, auth, version }) {
+export function formatServerSummary({ url, auth, version, live }) {
   const features = (version.serverData?.features || [])
     .map(feature => `${feature.name}${feature.version == null ? '' : ` ${feature.version}`}`)
     .join(', ')
@@ -20,6 +20,7 @@ export function formatServerSummary({ url, auth, version }) {
     `Server:   ${url}`,
     `Protocol: ${version.protocol} (supported)`,
     `Auth:     ${auth.name}${auth.version ? ` ${auth.version}` : ''}`,
+    `Live:     ${live ? 'WebSocket' : 'HTTP polling'}`,
     `Features: ${features || 'none reported'}`,
     `CLI:      screeps ${CLI_VERSION} using ${API_CLIENT.name} ${API_CLIENT.version}`
   ].join('\n')

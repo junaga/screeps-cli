@@ -17,9 +17,11 @@ test('formats server and client versions for terminal users', () => {
   const summary = formatServerSummary({
     url: 'http://example.test:21025',
     auth: { name: 'screepsmod-auth', version: '2.9.0' },
+    live: false,
     version: { protocol: 14, serverData: { features: [{ name: 'market', version: 1 }] } }
   })
   assert.match(summary, /Protocol: 14 \(supported\)/)
   assert.match(summary, /screeps-api 2\.1\.0/)
   assert.match(summary, /market 1/)
+  assert.match(summary, /HTTP polling/)
 })
