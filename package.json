@@ -1,0 +1,20 @@
+{
+  "name": "screeps-terminal",
+  "version": "0.1.0",
+  "description": "A clean, complete terminal client for Screeps World",
+  "type": "module",
+  "bin": {
+    "screeps": "./bin/screeps.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check bin/screeps.js && node --check src/*.js && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "commander": "^14.0.2",
+    "screeps-api": "^2.1.0"
+  }
+}
