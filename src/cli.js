@@ -1,3 +1,5 @@
+import { stderr, stdin } from 'node:process'
+import { createInterface } from 'node:readline/promises'
 import { createClient, output } from './client.js'
 import { API_CLIENT, CLI_VERSION, assertServerCompatibility, formatServerSummary } from './compatibility.js'
 import { normalizeUrl } from './config.js'
@@ -5,8 +7,7 @@ import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders
 import { parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, mergeRoomObjects, renderRoom, renderWorldMap, roomsAround, summarizeObjects } from './room.js'
 import { login } from './token.js'
-import { createInterface } from 'node:readline/promises'
-import { stdin, stderr } from 'node:process'
+import { coordinate, flagColor, integer, pageNumber } from './validation.js'
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -36,6 +37,19 @@ async function supportsLiveSocket(api) {
   } finally {
     api.socket.disconnect()
   }
+}
+
+async function waitForInterrupt(socket) {
+  await new Promise(resolve => {
+    const stop = () => {
+      process.removeListener('SIGINT', stop)
+      process.removeListener('SIGTERM', stop)
+      socket.disconnect()
+      resolve()
+    }
+    process.once('SIGINT', stop)
+    process.once('SIGTERM', stop)
+  })
 }
 
 function connectionOptions(command) {
@@ -89,18 +103,14 @@ async function watchRoom(api, room, options, ownUserId) {
     output(renderRoom({ name: room, terrain, objects: [...state.values()], ownUserId, gameTime: lastTick, color: options.color }))
   }
   draw()
+  await api.socket.subscribeRoom(room, options.shard, draw)
   try {
-    await api.socket.subscribeRoom(room, options.shard, draw)
     await api.socket.connect()
-    await new Promise(resolve => {
-      const stop = () => { api.socket.disconnect(); resolve() }
-      process.once('SIGINT', stop)
-      process.once('SIGTERM', stop)
-    })
   } catch {
     api.socket.disconnect()
     throw new Error('Live room updates are unavailable. Run screeps login to refresh the live session.')
   }
+  await waitForInterrupt(api.socket)
 }
 
 export async function run(program, argv) {
@@ -119,6 +129,11 @@ Examples:
 
   program.command('login <server>')
     .description('connect this CLI to a Screeps server')
+    .addHelpText('after', `
+Login stores private credentials locally so HTTP and live commands keep working.
+
+Example:
+  screeps login example.com:21025`)
     .action(async (server, _options, command) => {
       const rootOptions = connectionOptions(command)
       const result = await login({
@@ -127,6 +142,7 @@ Examples:
         onDesktopRequired: promptForDesktopLogin,
       })
       output(`Authenticated as ${result.username} on ${normalizeUrl(server)}. This server is now active.`)
+      if (result.passwordCreated) output('Enabled durable live login for this account.')
     })
 
   program.command('server')
@@ -173,8 +189,7 @@ Examples:
   program.command('map <center> [radius]')
     .description('show the world around a room')
     .action(withClient(async ({ api }, center, radius = '5', options) => {
-      const numericRadius = Number(radius)
-      if (!Number.isInteger(numericRadius) || numericRadius < 0 || numericRadius > 20) throw new Error('Radius must be an integer from 0 to 20')
+      const numericRadius = integer(radius, 'Radius', { min: 0, max: 20 })
       const rooms = roomsAround(center, numericRadius)
       const response = await api.gameMapStats(rooms, 'owner0', options.shard)
       if (options.json) output(response, { json: true })
@@ -225,17 +240,18 @@ Examples:
         api.socket.disconnect()
         throw new Error('This server rejected live console authentication. Console streaming is unavailable; one-time expressions still work.')
       }
-      await new Promise(resolve => process.once('SIGINT', () => { api.socket.disconnect(); resolve() }))
+      await waitForInterrupt(api.socket)
     }))
 
   const flag = program.command('flag').description('manage flags')
   flag.command('place <name> <room> <x> <y>')
     .description('place a named flag in a room')
-    .option('--primary <number>', 'primary color', Number, 1)
-    .option('--secondary <number>', 'secondary color', Number, 1)
+    .option('--primary <number>', 'primary color', flagColor, 1)
+    .option('--secondary <number>', 'secondary color', flagColor, 1)
     .action(withClient(async ({ api }, name, room, x, y, options) => {
-      const response = await api.gameCreateFlag(room, Number(x), Number(y), name, options.primary, options.secondary, options.shard)
-      printResult(response, `Placed flag ${name} at ${room} ${x},${y}.`, options)
+      const position = { x: coordinate(x), y: coordinate(y) }
+      const response = await api.gameCreateFlag(room, position.x, position.y, name, options.primary, options.secondary, options.shard)
+      printResult(response, `Placed flag ${name} at ${room} ${position.x},${position.y}.`, options)
     }))
   flag.command('remove <name> <room>')
     .description('remove a flag from a room')
@@ -248,16 +264,18 @@ Examples:
     .description('place a construction site')
     .option('--name <name>', 'optional structure name')
     .action(withClient(async ({ api }, type, room, x, y, options) => {
-      const response = await api.gameCreateConstruction(room, Number(x), Number(y), type, options.name, options.shard)
-      printResult(response, `Placed ${type} construction at ${room} ${x},${y}.`, options)
+      const position = { x: coordinate(x), y: coordinate(y) }
+      const response = await api.gameCreateConstruction(room, position.x, position.y, type, options.name, options.shard)
+      printResult(response, `Placed ${type} construction at ${room} ${position.x},${position.y}.`, options)
     }))
 
   const spawn = program.command('spawn').description('manage spawns')
   spawn.command('place <room> <x> <y> [name]')
     .description('place your first spawn')
     .action(withClient(async ({ api }, room, x, y, name, options) => {
-      const response = await api.gamePlaceSpawn(room, Number(x), Number(y), name, options.shard)
-      printResult(response, `Placed spawn${name ? ` ${name}` : ''} at ${room} ${x},${y}.`, options)
+      const position = { x: coordinate(x), y: coordinate(y) }
+      const response = await api.gamePlaceSpawn(room, position.x, position.y, name, options.shard)
+      printResult(response, `Placed spawn${name ? ` ${name}` : ''} at ${room} ${position.x},${position.y}.`, options)
     }))
 
   const message = program.command('message').description('message other players')
@@ -293,7 +311,7 @@ Examples:
   market.command('history [page]')
     .description('show your transaction history')
     .action(withClient(async ({ api }, page, options) => {
-      const response = await api.userMoneyHistory(page == null ? 0 : Number(page))
+      const response = await api.userMoneyHistory(page == null ? 0 : pageNumber(page))
       if (options.json) output(response, { json: true })
       else output(formatMarketHistory(response))
     }))

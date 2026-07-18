@@ -1,9 +1,12 @@
+import { randomBytes } from 'node:crypto'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import WebSocket from 'ws'
 import { assertServerCompatibility } from './compatibility.js'
 import { normalizeUrl, readConfig, writeConfig } from './config.js'
+import { createSessionToken, exchangeSocketToken } from './live.js'
+
+export { exchangeSocketToken } from './live.js'
 
 export function defaultClientStoragePaths() {
   if (process.platform === 'darwin') {
@@ -68,48 +71,64 @@ async function requestJson(url, options) {
   return { response, body }
 }
 
-export async function exchangeSocketToken({ url, token, serverPassword, timeout = 5000 }) {
-  if (!token) return null
-  const socketUrl = new URL('socket/websocket', url.replace(/^http/, 'ws'))
-  const headers = serverPassword ? { 'X-Server-Password': serverPassword } : undefined
-  return new Promise(resolve => {
-    const socket = new WebSocket(socketUrl, { headers })
-    let settled = false
-    const finish = value => {
-      if (settled) return
-      settled = true
-      clearTimeout(timer)
-      socket.close()
-      resolve(value)
-    }
-    const timer = setTimeout(() => {
-      socket.terminate()
-      finish(null)
-    }, timeout)
-    socket.on('open', () => socket.send(`auth ${token}`))
-    socket.on('message', data => {
-      const match = data.toString().match(/^auth (ok|failed)(?: (.+))?$/)
-      if (!match) return
-      finish(match[1] === 'ok' ? (match[2] || token) : null)
-    })
-    socket.on('error', () => finish(null))
-    socket.on('unexpected-response', () => finish(null))
+function authHeaders({ token, serverPassword }, json = false) {
+  return {
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    'X-Token': token,
+    'X-Username': token,
+    ...(serverPassword ? { 'X-Server-Password': serverPassword } : {})
+  }
+}
+
+async function setAccountPassword(connection, password) {
+  const { response, body } = await requestJson(`${connection.url.replace(/\/$/, '')}/api/user/password`, {
+    method: 'POST',
+    headers: authHeaders(connection, true),
+    body: JSON.stringify({ password })
   })
+  if (!response.ok || body.ok !== 1) throw new Error(`The server could not enable durable live login (${body.error || response.status}).`)
+}
+
+async function saveLogin(config, connection) {
+  config.current = connection.url
+  config.servers ||= {}
+  config.servers[connection.url] = { ...(config.servers[connection.url] || {}), ...connection }
+  delete config.servers[connection.url].liveToken
+  await writeConfig(config)
+}
+
+async function prepareLiveLogin({ connection, config, identity, token }) {
+  if (await exchangeSocketToken({ ...connection, token })) return { password: connection.password, passwordCreated: false }
+
+  let password = process.env.SCREEPS_PASSWORD || connection.password
+  let passwordCreated = false
+  if (identity.password === false) {
+    password ||= randomBytes(32).toString('base64url')
+    await saveLogin(config, { ...connection, username: identity.username, token, password })
+    await setAccountPassword({ ...connection, token }, password)
+    passwordCreated = true
+  }
+  if (!password) throw new Error('This account already has a password. Set SCREEPS_PASSWORD, then run login again.')
+  const sessionToken = await createSessionToken({ ...connection, username: identity.username, password })
+  if (!await exchangeSocketToken({ ...connection, token: sessionToken })) {
+    throw new Error('Account sign-in succeeded but the server rejected its live session.')
+  }
+  return { password, passwordCreated }
 }
 
 export async function validateToken({ url, token, serverPassword, username }) {
   if (!token) return null
-  const headers = { 'X-Token': token, 'X-Username': token }
-  if (serverPassword) headers['X-Server-Password'] = serverPassword
-  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/auth/me`, { headers })
+  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/auth/me`, {
+    headers: authHeaders({ token, serverPassword })
+  })
   if (!response.ok || body.error || (username && body.username !== username)) return null
   return body
 }
 
 async function validateServer({ url, token, serverPassword }) {
-  const headers = { 'X-Token': token, 'X-Username': token }
-  if (serverPassword) headers['X-Server-Password'] = serverPassword
-  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/version`, { headers })
+  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/version`, {
+    headers: authHeaders({ token, serverPassword })
+  })
   if (!response.ok || body.error) throw new Error(`Cannot inspect the Screeps server (${body.error || response.status}).`)
   return assertServerCompatibility(body)
 }
@@ -127,9 +146,9 @@ async function findDesktopSession({ connection, storagePath }) {
   let identity
 
   for (const candidate of candidates) {
-    const headers = { 'X-Token': candidate, 'X-Username': candidate }
-    if (serverPassword) headers['X-Server-Password'] = serverPassword
-    const { response, body } = await requestJson(`${baseUrl}/api/auth/me`, { headers })
+    const { response, body } = await requestJson(`${baseUrl}/api/auth/me`, {
+      headers: authHeaders({ token: candidate, serverPassword })
+    })
     if (!response.ok || body.error) continue
     if (connection.username && body.username !== connection.username) continue
     sessionToken = response.headers.get('x-token') || candidate
@@ -145,48 +164,25 @@ async function importDesktopToken({ connection, storagePath }) {
   const baseUrl = connection.url.replace(/\/$/, '')
   const { identity, serverPassword, sessionToken } = await findDesktopSession({ connection, storagePath })
 
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-Token': sessionToken,
-    'X-Username': sessionToken
-  }
-  if (serverPassword) headers['X-Server-Password'] = serverPassword
   const { response, body } = await requestJson(`${baseUrl}/api/user/auth-token`, {
     method: 'POST',
-    headers,
+    headers: authHeaders({ token: sessionToken, serverPassword }, true),
     body: JSON.stringify({ type: 'full', description: 'screeps-terminal CLI' })
   })
   if (!response.ok || !body.token) throw new Error(`The server did not create a persistent API token (${body.error || response.status}).`)
   await validateServer({ url: baseUrl, token: body.token, serverPassword })
-  const latestSessionToken = response.headers.get('x-token') || sessionToken
-  const liveToken = await exchangeSocketToken({ url: baseUrl, token: latestSessionToken, serverPassword })
-  if (!liveToken) throw new Error('The desktop session worked over HTTP but the server rejected its live connection.')
-
   const config = await readConfig()
-  config.current = baseUrl
-  config.servers ||= {}
-  config.servers[baseUrl] = {
-    ...(config.servers[baseUrl] || {}),
+  const imported = {
+    ...connection,
     url: baseUrl,
     username: identity.username || connection.username,
     token: body.token,
-    liveToken,
     ...(serverPassword ? { serverPassword } : {})
   }
-  delete config.servers[baseUrl].password
-  await writeConfig(config)
-  return { username: identity.username }
-}
-
-async function importDesktopLiveToken({ connection, storagePath }) {
-  const { identity, serverPassword, sessionToken } = await findDesktopSession({ connection, storagePath })
-  const liveToken = await exchangeSocketToken({
-    url: connection.url,
-    token: sessionToken,
-    serverPassword
-  })
-  if (!liveToken) throw new Error('The server rejected the active desktop session for live updates.')
-  return { identity, liveToken, serverPassword }
+  await saveLogin(config, imported)
+  const live = await prepareLiveLogin({ connection: imported, config, identity, token: body.token })
+  await saveLogin(config, { ...imported, ...(live.password ? { password: live.password } : {}) })
+  return { username: identity.username, passwordCreated: live.passwordCreated }
 }
 
 export async function login({ server, username, serverPassword, shard, storagePath, onDesktopRequired }) {
@@ -205,29 +201,14 @@ export async function login({ server, username, serverPassword, shard, storagePa
 
   if (identity) {
     await validateServer({ ...connection, token: suppliedToken })
-    let liveToken = await exchangeSocketToken({
-      ...connection,
-      token: connection.liveToken || suppliedToken
-    })
-    let liveServerPassword = connection.serverPassword
-    if (!liveToken) {
-      if (onDesktopRequired) await onDesktopRequired(url)
-      const imported = await importDesktopLiveToken({ connection, storagePath })
-      liveToken = imported.liveToken
-      liveServerPassword = imported.serverPassword
-    }
-    config.current = url
-    config.servers ||= {}
-    config.servers[url] = {
+    const live = await prepareLiveLogin({ connection, config, identity, token: suppliedToken })
+    await saveLogin(config, {
       ...connection,
       username: identity.username,
       token: suppliedToken,
-      liveToken,
-      ...(liveServerPassword ? { serverPassword: liveServerPassword } : {})
-    }
-    delete config.servers[url].password
-    await writeConfig(config)
-    return { username: identity.username }
+      ...(live.password ? { password: live.password } : {})
+    })
+    return { username: identity.username, passwordCreated: live.passwordCreated }
   }
   if (process.env.SCREEPS_TOKEN) throw new Error('SCREEPS_TOKEN was rejected by this server or belongs to another user.')
 

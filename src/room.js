@@ -13,11 +13,14 @@ const PRIORITY = {
 }
 
 export function decodeTerrain(response) {
-  const entry = Array.isArray(response?.terrain) ? response.terrain[0] : response?.terrain?.[0] ?? response?.terrain?.['0']
-  const encoded = entry?.terrain
+  const entries = Array.isArray(response?.terrain) ? response.terrain : Object.values(response?.terrain || {})
+  const encoded = entries.find(entry => typeof entry?.terrain === 'string')?.terrain
   if (typeof encoded !== 'string' || encoded.length < 2500) {
     const grid = Array.from({ length: 50 }, () => Array(50).fill(0))
-    for (const tile of response?.terrain || []) grid[tile.y][tile.x] = tile.type === 'wall' ? 1 : tile.type === 'swamp' ? 2 : 0
+    for (const tile of entries) {
+      if (!Number.isInteger(tile?.x) || !Number.isInteger(tile?.y) || tile.x < 0 || tile.x > 49 || tile.y < 0 || tile.y > 49) continue
+      grid[tile.y][tile.x] = tile.type === 'wall' ? 1 : tile.type === 'swamp' ? 2 : 0
+    }
     return grid
   }
   return Array.from({ length: 50 }, (_, y) => Array.from({ length: 50 }, (_, x) => Number(encoded[y * 50 + x]) || 0))
