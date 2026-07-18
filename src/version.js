@@ -4,3 +4,11 @@ export const CLI_VERSION = packageInfo.version
 export const GAME_PROTOCOL = 14
 export const DOCS_REPOSITORY = 'https://github.com/screeps/docs.git'
 export const DOCS_REVISION = 'c7cb981eba13bd6c3c4a3ea274851326d74a506f'
+
+export function formatVersion() {
+  return [
+    `CLI:      screeps ${CLI_VERSION}`,
+    `Game:     Screeps protocol ${GAME_PROTOCOL}`,
+    `Docs:     screeps/docs ${DOCS_REVISION.slice(0, 7)}`
+  ].join('\n')
+}

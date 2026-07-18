@@ -9,7 +9,7 @@ import { parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, describeRoomChanges, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
 import { login } from './token.js'
 import { coordinate, flagColor, integer, pageNumber } from './validation.js'
-import { DOCS_REPOSITORY, DOCS_REVISION, GAME_PROTOCOL } from './version.js'
+import { DOCS_REPOSITORY, DOCS_REVISION, GAME_PROTOCOL, formatVersion } from './version.js'
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -136,7 +136,7 @@ export async function run(program, argv) {
   program
     .name('screeps')
     .description('Play Screeps World from the terminal')
-    .version(CLI_VERSION)
+    .version(formatVersion(), '-V, --version', 'show CLI and compatibility versions')
     .option('-s, --shard <name>', 'world shard')
     .option('--json', 'print machine-readable JSON')
     .option('--no-color', 'disable ANSI color')

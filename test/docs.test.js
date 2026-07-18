@@ -33,3 +33,14 @@ test('docs command prints its bundled Markdown page exactly', async () => {
   assert.equal(result.status, 0)
   assert.equal(result.stdout, expected)
 })
+
+test('version reports CLI, game protocol, and docs revision', () => {
+  const result = spawnSync(process.execPath, ['bin/screeps.js', '--version'], { encoding: 'utf8' })
+  assert.equal(result.status, 0)
+  assert.equal(result.stdout, [
+    `CLI:      screeps ${packageInfo.version}`,
+    `Game:     Screeps protocol ${GAME_PROTOCOL}`,
+    `Docs:     screeps/docs ${DOCS_REVISION.slice(0, 7)}`,
+    ''
+  ].join('\n'))
+})
