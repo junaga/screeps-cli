@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatMarketOrders, formatMessages, formatObjects, formatRooms, formatStatus } from '../src/format.js'
+import { formatMarketOrders, formatMessages, formatRooms, formatStatus } from '../src/format.js'
 
 test('formats status as a short player summary', () => {
   const text = formatStatus({
@@ -18,11 +18,7 @@ test('formats room and market empty states plainly', () => {
   assert.equal(formatMarketOrders({ list: [] }, 'energy'), 'No energy orders.')
 })
 
-test('formats objects and messages without exposing server records', () => {
-  assert.equal(
-    formatObjects([{ type: 'spawn', name: 'Home', x: 10, y: 20, store: { energy: 300 }, hits: 5000, hitsMax: 5000 }]),
-    'spawn Home at 10,20 · 300 energy · 5,000/5,000 hits'
-  )
+test('formats messages without exposing server records', () => {
   assert.equal(
     formatMessages({ messages: [{ user: '42', text: 'hello' }], users: { 42: { username: 'Ada' } } }),
     'Ada: hello'

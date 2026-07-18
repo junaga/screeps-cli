@@ -1,6 +1,6 @@
 {
   "name": "screeps-terminal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Play Screeps World from the terminal",
   "type": "module",
   "bin": {
@@ -8,14 +8,15 @@
   },
   "scripts": {
     "test": "node --test",
+    "docs:update": "node scripts/update-docs.js",
     "check": "node --check bin/screeps.js && node --check src/*.js && node --check bot/*.js && node --test"
   },
   "engines": {
     "node": "22.x || 24.x"
   },
   "dependencies": {
-    "commander": "14.0.3",
-    "screeps-api": "2.1.0",
-    "ws": "8.21.1"
+    "commander": "^14.0.3",
+    "screeps-api": "^2.1.0",
+    "ws": "^8.21.1"
   }
 }

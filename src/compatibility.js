@@ -1,6 +1,8 @@
-export const CLI_VERSION = '0.1.0'
-export const API_CLIENT = { name: 'screeps-api', version: '2.1.0' }
-export const SUPPORTED_PROTOCOLS = [14]
+import { CLI_VERSION, DOCS_REVISION, GAME_PROTOCOL } from './version.js'
+
+export { CLI_VERSION }
+export const API_CLIENT = { name: 'screeps-api' }
+export const SUPPORTED_PROTOCOLS = [GAME_PROTOCOL]
 
 export function assertServerCompatibility(version) {
   if (!version || !Number.isInteger(version.protocol)) {
@@ -22,6 +24,7 @@ export function formatServerSummary({ url, auth, version, live }) {
     `Auth:     ${auth.name}${auth.version ? ` ${auth.version}` : ''}`,
     `Live:     ${live ? 'WebSocket' : 'unavailable'}`,
     `Features: ${features || 'none reported'}`,
-    `CLI:      screeps ${CLI_VERSION} using ${API_CLIENT.name} ${API_CLIENT.version}`
+    `Docs:     screeps/docs ${DOCS_REVISION.slice(0, 7)}`,
+    `CLI:      screeps ${CLI_VERSION} using ${API_CLIENT.name}`
   ].join('\n')
 }

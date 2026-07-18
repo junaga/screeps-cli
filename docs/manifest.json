@@ -1,0 +1,199 @@
+{
+  "gameProtocol": 14,
+  "repository": "https://github.com/screeps/docs.git",
+  "revision": "c7cb981eba13bd6c3c4a3ea274851326d74a506f",
+  "pages": [
+    {
+      "command": "advanced-grunt",
+      "file": "pages/advanced-grunt.md",
+      "source": "contributed/advanced_grunt.md",
+      "title": "Advanced Grunt Usage"
+    },
+    {
+      "command": "architecture",
+      "file": "pages/architecture.md",
+      "source": "architecture.md",
+      "title": "Server-side architecture overview"
+    },
+    {
+      "command": "auth-tokens",
+      "file": "pages/auth-tokens.md",
+      "source": "auth-tokens.md",
+      "title": "Authentication Tokens"
+    },
+    {
+      "command": "caching-overview",
+      "file": "pages/caching-overview.md",
+      "source": "contributed/caching-overview.md",
+      "title": "Caching Overview"
+    },
+    {
+      "command": "changelog",
+      "file": "pages/changelog.md",
+      "source": "changelog.md",
+      "title": "Changelog"
+    },
+    {
+      "command": "commit",
+      "file": "pages/commit.md",
+      "source": "commit.md",
+      "title": "Committing scripts using external tools"
+    },
+    {
+      "command": "community-servers",
+      "file": "pages/community-servers.md",
+      "source": "community-servers.md",
+      "title": "Community Servers"
+    },
+    {
+      "command": "control",
+      "file": "pages/control.md",
+      "source": "control.md",
+      "title": "Control"
+    },
+    {
+      "command": "cpu-limit",
+      "file": "pages/cpu-limit.md",
+      "source": "cpu-limit.md",
+      "title": "How does CPU limit work"
+    },
+    {
+      "command": "creeps",
+      "file": "pages/creeps.md",
+      "source": "creeps.md",
+      "title": "Creeps"
+    },
+    {
+      "command": "debugging",
+      "file": "pages/debugging.md",
+      "source": "debugging.md",
+      "title": "Debugging"
+    },
+    {
+      "command": "defense",
+      "file": "pages/defense.md",
+      "source": "defense.md",
+      "title": "Defending your room"
+    },
+    {
+      "command": "game-loop",
+      "file": "pages/game-loop.md",
+      "source": "game-loop.md",
+      "title": "Understanding game loop, time and ticks"
+    },
+    {
+      "command": "global-objects",
+      "file": "pages/global-objects.md",
+      "source": "global-objects.md",
+      "title": "Global Objects"
+    },
+    {
+      "command": "introduction",
+      "file": "pages/introduction.md",
+      "source": "introduction.md",
+      "title": "Introduction"
+    },
+    {
+      "command": "invaders",
+      "file": "pages/invaders.md",
+      "source": "invaders.md",
+      "title": "NPC Invaders"
+    },
+    {
+      "command": "market",
+      "file": "pages/market.md",
+      "source": "market.md",
+      "title": "Market System"
+    },
+    {
+      "command": "modifying-prototypes",
+      "file": "pages/modifying-prototypes.md",
+      "source": "contributed/modifying-prototypes.md",
+      "title": "Modifying object prototypes"
+    },
+    {
+      "command": "modules",
+      "file": "pages/modules.md",
+      "source": "modules.md",
+      "title": "Organizing scripts using modules"
+    },
+    {
+      "command": "overview",
+      "file": "pages/overview.md",
+      "source": "index.md",
+      "title": "Overview"
+    },
+    {
+      "command": "power",
+      "file": "pages/power.md",
+      "source": "power.md",
+      "title": "Power"
+    },
+    {
+      "command": "privacy-policy",
+      "file": "pages/privacy-policy.md",
+      "source": "privacy-policy.md",
+      "title": "Privacy Policy"
+    },
+    {
+      "command": "ps-ubuntu",
+      "file": "pages/ps-ubuntu.md",
+      "source": "contributed/ps_ubuntu.md",
+      "title": "Private server on Ubuntu using MongoDB and Redis"
+    },
+    {
+      "command": "ptr",
+      "file": "pages/ptr.md",
+      "source": "ptr.md",
+      "title": "Public Test Realm (PTR)"
+    },
+    {
+      "command": "resources",
+      "file": "pages/resources.md",
+      "source": "resources.md",
+      "title": "Resources"
+    },
+    {
+      "command": "respawn",
+      "file": "pages/respawn.md",
+      "source": "respawn.md",
+      "title": "Respawning"
+    },
+    {
+      "command": "rules",
+      "file": "pages/rules.md",
+      "source": "contributed/rules.md",
+      "title": "Contribute to Screeps docs and earn money"
+    },
+    {
+      "command": "scripting-basics",
+      "file": "pages/scripting-basics.md",
+      "source": "scripting-basics.md",
+      "title": "Scripting Basics"
+    },
+    {
+      "command": "simultaneous-actions",
+      "file": "pages/simultaneous-actions.md",
+      "source": "simultaneous-actions.md",
+      "title": "Simultaneous execution of creep actions"
+    },
+    {
+      "command": "start-areas",
+      "file": "pages/start-areas.md",
+      "source": "start-areas.md",
+      "title": "Start Areas"
+    },
+    {
+      "command": "third-party",
+      "file": "pages/third-party.md",
+      "source": "third-party.md",
+      "title": "Third Party Tools"
+    },
+    {
+      "command": "tos",
+      "file": "pages/tos.md",
+      "source": "tos.md",
+      "title": "Terms of Service"
+    }
+  ]
+}

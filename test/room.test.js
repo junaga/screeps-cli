@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { coordinatesToRoomName, decodeTerrain, mergeRoomObjects, renderRoom, roomNameToCoordinates, roomsAround } from '../src/room.js'
+import { coordinatesToRoomName, decodeTerrain, describeRoomChanges, mergeRoomObjects, renderRoom, renderTile, roomNameToCoordinates, roomsAround } from '../src/room.js'
 
 test('decodes the compact 2500-character terrain format', () => {
   const encoded = `${'0'.repeat(51)}1${'0'.repeat(2448)}`
@@ -45,4 +45,40 @@ test('renders terrain and objects at their coordinates', () => {
   const rendered = renderRoom({ name: 'W0N0', terrain, objects: [{ _id: 's', type: 'source', x: 1, y: 0 }], color: false })
   const mapRow = rendered.split('\n')[3]
   assert.equal(mapRow.slice(3, 5), '#S')
+})
+
+test('describes everything on a tile', () => {
+  const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
+  terrain[3][2] = 2
+  const rendered = renderTile({
+    name: 'W0N0', x: 2, y: 3, terrain, ownUserId: 'me',
+    objects: [
+      { type: 'road', x: 2, y: 3, hits: 100, hitsMax: 500 },
+      { type: 'creep', name: 'Worker1', user: 'me', x: 2, y: 3, hits: 300, hitsMax: 300, store: { energy: 12 }, storeCapacity: 50 }
+    ]
+  })
+  assert.match(rendered, /Terrain: swamp/)
+  assert.match(rendered, /road · 100\/500 hits/)
+  assert.match(rendered, /creep Worker1 · yours · 12\/50 energy · 300\/300 hits/)
+})
+
+test('translates room patches into honest English events', () => {
+  const state = new Map([['worker', {
+    _id: 'worker', type: 'creep', name: 'Worker1', x: 1, y: 2,
+    hits: 300, hitsMax: 300, store: { energy: 10 }
+  }]])
+  const lines = describeRoomChanges(state, {
+    worker: {
+      x: 2,
+      store: { energy: 12 },
+      actionLog: { harvest: { x: 3, y: 4 } }
+    },
+    source: { type: 'source', x: 3, y: 4, energy: 3000 }
+  })
+  assert.deepEqual(lines, [
+    'creep Worker1 moved 1,2 -> 2,2.',
+    'creep Worker1 harvested 2 energy at 3,4.',
+    'source appeared at 3,4.'
+  ])
+  assert.equal(state.get('worker').x, 2)
 })

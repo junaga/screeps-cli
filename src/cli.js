@@ -3,11 +3,13 @@ import { createInterface } from 'node:readline/promises'
 import { createClient, output } from './client.js'
 import { API_CLIENT, CLI_VERSION, assertServerCompatibility, formatServerSummary } from './compatibility.js'
 import { normalizeUrl } from './config.js'
-import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatObjects, formatRooms, formatStatus } from './format.js'
+import { readDocsManifest, readDocsPage } from './docs.js'
+import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatRooms, formatStatus } from './format.js'
 import { parseValue, readModules, writeModules } from './io.js'
-import { decodeTerrain, mergeRoomObjects, renderRoom, renderWorldMap, roomsAround, summarizeObjects } from './room.js'
+import { decodeTerrain, describeRoomChanges, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
 import { login } from './token.js'
 import { coordinate, flagColor, integer, pageNumber } from './validation.js'
+import { DOCS_REPOSITORY, DOCS_REVISION, GAME_PROTOCOL } from './version.js'
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -83,28 +85,44 @@ async function renderOnce(api, room, options, ownUserId) {
     gameTime: timeResponse.time,
     color: options.color
   }))
-  if (options.details) output(formatObjects(summarizeObjects(objectResponse.objects, objectResponse.users)))
 }
 
-async function watchRoom(api, room, options, ownUserId) {
+async function renderTileOnce(api, room, x, y, options, ownUserId) {
   const [terrainResponse, objectResponse] = await Promise.all([
-    api.gameRoomTerrain(room, options.shard),
-    api.gameRoomObjects(room, options.shard)
+    api.gameRoomTerrain(room, options.shard), api.gameRoomObjects(room, options.shard)
   ])
   const terrain = decodeTerrain(terrainResponse)
+  if (options.json) return output({
+    room, x, y, terrain: terrain[y][x],
+    objects: objectResponse.objects.filter(object => object.x === x && object.y === y)
+  }, { json: true })
+  output(renderTile({
+    name: room, x, y,
+    terrain,
+    objects: objectResponse.objects,
+    users: objectResponse.users,
+    ownUserId
+  }))
+}
+
+async function watchRoom(api, room, options) {
+  const [objectResponse, timeResponse] = await Promise.all([
+    api.gameRoomObjects(room, options.shard), api.gameTime(options.shard)
+  ])
   const state = new Map(objectResponse.objects.map(object => [object._id, object]))
-  let lastTick
-  const draw = event => {
-    if (event) {
-      mergeRoomObjects(state, event.data.objects)
-      lastTick = event.data.gameTime ?? lastTick
-    }
-    if (process.stdout.isTTY) process.stdout.write('\x1b[2J\x1b[H')
-    output(renderRoom({ name: room, terrain, objects: [...state.values()], ownUserId, gameTime: lastTick, color: options.color }))
+  const users = { ...(objectResponse.users || {}) }
+  let lastTick = timeResponse.time
+  if (options.json) output({ room, fromTick: timeResponse.time }, { json: true })
+  else output(`Watching ${room} from tick ${timeResponse.time}.`)
+  const report = event => {
+    if (options.json) return output(event.data, { json: true })
+    Object.assign(users, event.data.users || {})
+    lastTick = event.data.gameTime ?? lastTick
+    const tick = lastTick
+    for (const line of describeRoomChanges(state, event.data.objects, users)) output(`${tick}  ${line}`)
   }
-  draw()
-  await api.socket.subscribeRoom(room, options.shard, draw)
   try {
+    await api.socket.subscribeRoom(room, options.shard, report)
     await api.socket.connect()
   } catch {
     api.socket.disconnect()
@@ -114,6 +132,7 @@ async function watchRoom(api, room, options, ownUserId) {
 }
 
 export async function run(program, argv) {
+  const docsManifest = await readDocsManifest()
   program
     .name('screeps')
     .description('Play Screeps World from the terminal')
@@ -125,7 +144,8 @@ export async function run(program, argv) {
     .addHelpText('after', `
 Examples:
   screeps status
-  screeps room E4S1 --watch --details`)
+  screeps room E4S1
+  screeps watch E4S1`)
 
   program.command('login <server>')
     .description('connect this CLI to a Screeps server')
@@ -150,10 +170,27 @@ Example:
     .action(withClient(async ({ api, connection }, options) => {
       const [version, authmod, live] = await Promise.all([api.version(), api.authmod(), supportsLiveSocket(api)])
       assertServerCompatibility(version)
-      const result = { cli: CLI_VERSION, client: API_CLIENT, url: connection.url, auth: authmod, live, version }
+      const result = {
+        cli: CLI_VERSION,
+        game: { protocol: GAME_PROTOCOL },
+        docs: { repository: DOCS_REPOSITORY, revision: DOCS_REVISION },
+        client: API_CLIENT,
+        url: connection.url,
+        auth: authmod,
+        live,
+        version
+      }
       if (options.json) output(result, { json: true })
       else output(formatServerSummary(result))
     }, { requireAuth: false }))
+
+  const docs = program.command('docs').description('read the official game documentation')
+  for (const page of docsManifest.pages) {
+    docs.command(page.command)
+      .description(page.title)
+      .action(async () => process.stdout.write(await readDocsPage(page.file)))
+  }
+  docs.action((_options, command) => command.help())
 
   program.command('status')
     .description('show your player status')
@@ -177,13 +214,23 @@ Example:
     }))
 
   program.command('room <name>')
-    .description('show a room')
-    .option('-w, --watch', 'redraw on every live room update')
-    .option('-d, --details', 'also print object details')
+    .description('draw the current room')
     .action(withClient(async ({ api }, room, options) => {
       const me = await api.authMe()
-      if (options.watch) await watchRoom(api, room, options, me._id)
-      else await renderOnce(api, room, options, me._id)
+      await renderOnce(api, room, options, me._id)
+    }))
+
+  program.command('tile <room> <x> <y>')
+    .description('show everything on one tile')
+    .action(withClient(async ({ api }, room, x, y, options) => {
+      const me = await api.authMe()
+      await renderTileOnce(api, room, coordinate(x), coordinate(y), options, me._id)
+    }))
+
+  program.command('watch <room>')
+    .description('stream room activity in English')
+    .action(withClient(async ({ api }, room, options) => {
+      await watchRoom(api, room, options)
     }))
 
   program.command('map <center> [radius]')

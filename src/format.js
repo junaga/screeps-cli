@@ -57,17 +57,3 @@ export function formatMarketHistory(response) {
     return `${change} ${description}`.trim()
   }).join('\n')
 }
-
-export function formatObjects(objects) {
-  if (!objects.length) return 'No visible objects.'
-  return objects.map(object => {
-    const name = object.name ? ` ${object.name}` : ''
-    const energy = object.store?.energy ?? object.energy
-    const details = [
-      energy == null ? null : `${number(energy)} energy`,
-      object.level == null ? null : `level ${object.level}`,
-      object.hits == null ? null : `${number(object.hits)}/${number(object.hitsMax)} hits`
-    ].filter(Boolean)
-    return `${object.type}${name} at ${object.x},${object.y}${details.length ? ` · ${details.join(' · ')}` : ''}`
-  }).join('\n')
-}

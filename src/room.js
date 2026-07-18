@@ -2,9 +2,9 @@ const GLYPHS = {
   source: 'S', mineral: 'M', deposit: 'D', controller: 'C', spawn: 'P',
   extension: 'e', tower: 'T', storage: 'G', terminal: 'L', container: 'n',
   link: 'k', lab: 'l', factory: 'F', observer: 'O', powerSpawn: 'Q', nuker: 'N',
-  road: '·', constructedWall: 'W', rampart: 'R', extractor: 'x', portal: '◎',
+  road: '.', constructedWall: 'W', rampart: 'R', extractor: 'x', portal: 'o',
   keeperLair: 'K', invaderCore: 'I', powerBank: 'B', constructionSite: '+',
-  tombstone: '†', ruin: 'r', nuke: '*', creep: '@', powerCreep: '&'
+  tombstone: 't', ruin: 'r', nuke: '*', creep: '@', powerCreep: '&'
 }
 
 const PRIORITY = {
@@ -62,8 +62,128 @@ export function renderRoom({ name, terrain, objects, ownUserId, gameTime, color 
     }
     lines.push(row)
   }
-  lines.push('Legend: # wall  ~ swamp  S source  M mineral  C controller  P spawn  @ your creep  ! hostile  + site')
+  lines.push('Legend: # wall  ~ swamp  . road  S source  M mineral  C controller  P spawn  @ your creep  ! hostile  + site')
   return lines.join('\n')
+}
+
+function words(value) {
+  return String(value || 'object').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
+}
+
+function owner(object, users, ownUserId) {
+  if (!object.user) return null
+  if (object.user === ownUserId) return 'yours'
+  return users[object.user]?.username || object.user
+}
+
+function amount(value) {
+  return Number.isFinite(value) ? new Intl.NumberFormat('en').format(value) : '?'
+}
+
+export function describeObject(object, users = {}, ownUserId) {
+  const title = `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
+  const details = [owner(object, users, ownUserId)]
+  const energy = object.store?.energy ?? object.energy
+  const capacity = object.storeCapacity ?? object.storeCapacityResource?.energy ?? object.energyCapacity
+  if (energy != null) details.push(`${amount(energy)}${capacity == null ? '' : `/${amount(capacity)}`} energy`)
+  if (object.hits != null) details.push(`${amount(object.hits)}/${amount(object.hitsMax)} hits`)
+  if (object.level != null) details.push(`level ${object.level}`)
+  if (object.progress != null) details.push(`${amount(object.progress)}/${amount(object.progressTotal)} progress`)
+  if (object.mineralType) details.push(`${amount(object.mineralAmount)} ${object.mineralType}`)
+  if (object.body?.length) {
+    const parts = Object.entries(Object.groupBy(object.body, part => String(part.type).toUpperCase()))
+      .map(([part, entries]) => `${entries.length} ${part}`)
+    details.push(parts.join(', '))
+  }
+  if (object.fatigue) details.push(`${object.fatigue} fatigue`)
+  if (object.spawning) details.push(`spawning ${object.spawning.name || 'a creep'}`)
+  return `${title}${details.filter(Boolean).length ? ` · ${details.filter(Boolean).join(' · ')}` : ''}`
+}
+
+export function renderTile({ name, x, y, terrain, objects, users, ownUserId }) {
+  const terrainName = (terrain[y]?.[x] & 1) ? 'wall' : (terrain[y]?.[x] & 2) ? 'swamp' : 'plain'
+  const occupants = objects.filter(object => object.x === x && object.y === y)
+  return [
+    `${name} ${x},${y}`,
+    `Terrain: ${terrainName}`,
+    ...(occupants.length ? occupants.map(object => describeObject(object, users, ownUserId)) : ['Nothing else is here.'])
+  ].join('\n')
+}
+
+function objectName(object) {
+  return `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
+}
+
+function position(value) {
+  return `${value.x},${value.y}`
+}
+
+const ACTIONS = {
+  attack: 'attacked', rangedAttack: 'ranged attacked', rangedMassAttack: 'made a ranged mass attack',
+  heal: 'healed', rangedHeal: 'ranged healed', harvest: 'harvested', repair: 'repaired',
+  build: 'built', upgradeController: 'upgraded the controller', reserveController: 'reserved the controller'
+}
+
+export function describeRoomChanges(state, patches, users = {}) {
+  const lines = []
+  for (const [id, patch] of Object.entries(patches || {})) {
+    const previous = state.get(id)
+    if (patch === null) {
+      if (previous) lines.push(`${objectName(previous)} disappeared from ${position(previous)}.`)
+      continue
+    }
+
+    const current = { _id: id, ...previous, ...patch }
+    const name = objectName(current)
+    if (!previous) {
+      lines.push(`${name} appeared at ${position(current)}.`)
+      continue
+    }
+    if ((patch.x != null || patch.y != null) && (previous.x !== current.x || previous.y !== current.y)) {
+      lines.push(`${name} moved ${position(previous)} -> ${position(current)}.`)
+    }
+    const previousEnergy = previous.store?.energy ?? previous.energy
+    const currentEnergy = current.store?.energy ?? current.energy
+    const energyChange = (patch.store || patch.energy != null) && previousEnergy != null
+      ? currentEnergy - previousEnergy
+      : 0
+    const energyAction = energyChange > 0 && current.actionLog?.harvest
+      ? `${name} harvested ${amount(energyChange)} energy at ${position(current.actionLog.harvest)}.`
+      : energyChange < 0 && current.actionLog?.upgradeController
+        ? `${name} spent ${amount(-energyChange)} energy upgrading the controller at ${position(current.actionLog.upgradeController)}.`
+        : energyChange < 0 && current.actionLog?.build
+          ? `${name} spent ${amount(-energyChange)} energy building at ${position(current.actionLog.build)}.`
+          : energyChange < 0 && current.actionLog?.repair
+            ? `${name} spent ${amount(-energyChange)} energy repairing at ${position(current.actionLog.repair)}.`
+            : null
+    for (const [action, target] of Object.entries(patch.actionLog || {})) {
+      if (!target) continue
+      if (action === 'say') lines.push(`${name} said "${target.message}".`)
+      else if (ACTIONS[action] && !(energyAction && ['harvest', 'upgradeController', 'build', 'repair'].includes(action))) {
+        lines.push(`${name} ${ACTIONS[action]} at ${position(target)}.`)
+      }
+    }
+    if (patch.hits != null && previous.hits != null && previous.hits !== current.hits) {
+      const change = current.hits - previous.hits
+      lines.push(`${name} ${change < 0 ? 'lost' : 'recovered'} ${amount(Math.abs(change))} hits (${amount(current.hits)}/${amount(current.hitsMax)}).`)
+    }
+    if (energyAction) lines.push(energyAction)
+    else if (energyChange) {
+      lines.push(`${name} energy changed ${amount(previousEnergy)} -> ${amount(currentEnergy)}.`)
+    }
+    if (patch.progress != null && previous.progress != null && previous.progress !== current.progress) {
+      lines.push(`${name} progress changed ${amount(previous.progress)} -> ${amount(current.progress)}.`)
+    }
+    if (patch.level != null && previous.level != null && previous.level !== current.level) {
+      lines.push(`${name} reached level ${current.level}.`)
+    }
+    if (patch.spawning !== undefined && Boolean(previous.spawning) !== Boolean(current.spawning)) {
+      if (current.spawning) lines.push(`${name} started spawning ${current.spawning.name || 'a creep'}.`)
+      else if (previous.spawning) lines.push(`${name} finished spawning ${previous.spawning.name || 'a creep'}.`)
+    }
+  }
+  mergeRoomObjects(state, patches)
+  return lines
 }
 
 export function roomNameToCoordinates(name) {
@@ -116,22 +236,4 @@ export function mergeRoomObjects(state, patches) {
     else state.set(id, { ...(state.get(id) || {}), ...patch })
   }
   return state
-}
-
-export function summarizeObjects(objects, users = {}) {
-  return (Array.isArray(objects) ? objects : Object.values(objects || {})).filter(Boolean).map(object => ({
-    id: object._id,
-    type: object.type,
-    name: object.name,
-    x: object.x,
-    y: object.y,
-    owner: users[object.user]?.username || object.user,
-    hits: object.hits,
-    hitsMax: object.hitsMax,
-    store: object.store,
-    energy: object.energy,
-    level: object.level,
-    progress: object.progress,
-    progressTotal: object.progressTotal
-  }))
 }

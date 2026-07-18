@@ -21,7 +21,8 @@ test('formats server and client versions for terminal users', () => {
     version: { protocol: 14, serverData: { features: [{ name: 'market', version: 1 }] } }
   })
   assert.match(summary, /Protocol: 14 \(supported\)/)
-  assert.match(summary, /screeps-api 2\.1\.0/)
+  assert.match(summary, /screeps\/docs c7cb981/)
+  assert.match(summary, /screeps 0\.2\.0 using screeps-api/)
   assert.match(summary, /market 1/)
   assert.match(summary, /unavailable/)
 })
