@@ -42,13 +42,14 @@ Options:
   -S, --server <name>           use a remembered server
   -s, --shard <name>            use a world shard
   -r, --room <name>             use a room when a command needs one
-  -j, --json                    emit stable machine-readable output
+  -j, --json                    emit JSON; streams use NDJSON
       --no-color                disable terminal color
   -h, --help                    show help for any command
   -V, --version                 show version and compatibility information
 
-Commands without arguments open their useful default view. Detailed help lives
-one level down: `screeps <command> --help`.
+Views are interactive in a terminal and become one-shot snapshots when piped.
+`--json` changes their format, never their meaning. Default views are read-only;
+actions and examples live one level down: `screeps <command> --help`.
 
 Examples:
   screeps
