@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { basename, extname, join, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { DOCS_REPOSITORY, DOCS_REVISION, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
+import { transcodeHtmlTables } from './docs-markdown.js'
 
 const run = promisify(execFile)
 const destination = new URL('../docs/', import.meta.url)
@@ -64,6 +65,7 @@ function readPage(source, powers) {
     .replace(/[ \t]+$/gm, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+  body = transcodeHtmlTables(body)
   return { title, markdown: `# ${title}\n\n${body}\n` }
 }
 

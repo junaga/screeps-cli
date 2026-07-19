@@ -19,38 +19,11 @@ There are two sizes of invader creeps:
 *   Light creeps that appear in neutral, reserved, and claimed rooms up to level 3.
 *   Heavy creeps that appear in claimed rooms level 4 and above.
 
-<style>
-.invaders td {
-    border-top: 1px solid #333;
-    background-color: #222;
-    color: #ccc;
-}
-</style>
-
-<table class=invaders>
-<tbody>
-<tr>
-<td width="15%"> </td>
-<td style="text-align: center;">RCL < 4</td>
-<td style="text-align: center;">RCL ≥ 4</td>
-</tr>
-<tr>
-<td style="text-align: left;">Melee</td>
-<td style="text-align: center;">![](img/smallMelee.png)</td>
-<td style="text-align: center;">![](img/bigMelee.png)</td>
-</tr>
-<tr>
-<td style="text-align: left;">Ranged</td>
-<td style="text-align: center;">![](img/smallRanged.png)</td>
-<td style="text-align: center;">![](img/bigRanged.png)</td>
-</tr>
-<tr>
-<td style="text-align: left;">Healer</td>
-<td style="text-align: center;">![](img/smallHealer.png)</td>
-<td style="text-align: center;">![](img/bigHealer.png)</td>
-</tr>
-</tbody>
-</table>
+|  | RCL < 4 | RCL ≥ 4 |
+| --- | --- | --- |
+| Melee | ![](img/smallMelee.png) | ![](img/bigMelee.png) |
+| Ranged | ![](img/smallRanged.png) | ![](img/bigRanged.png) |
+| Healer | ![](img/smallHealer.png) | ![](img/bigHealer.png) |
 
 ## Testing
 

@@ -36,26 +36,11 @@ PCs are immortal. A newly-created PC is tied to your account and exists in it ev
 
 PCs can belong to either of the 3 classes:
 
-<table>
-<tr>
-<td style="padding: 10px; background: #141414"><img src="img/operator.png"></td>
-<td><strong>Operator</strong><br>
-A creep working mainly in the rear, at your base, though it can be used as a saboteur in offensive operations.
-</td>
-</tr>
-<tr style="background: none">
-<td style="padding: 10px; background: #141414"><img src="img/commander.png"></td>
-<td><strong>Commander</strong><br>
-This power creep is not very useful on its own, but it’s a team player. It influences and affects regular creeps, both friendly and hostile.
-</td>
-</tr>
-<tr>
-<td style="padding: 10px; background: #141414"><img src="img/executor.png"></td>
-<td><strong>Executor</strong><br>
-This creep class prefers working alone. Due to its skills, it’s a very effective performer in your economy or as a war machine when defending or attacking.
-</td>
-</tr>
-</table>
+|  |
+| --- |
+| **Operator**; A creep working mainly in the rear, at your base, though it can be used as a saboteur in offensive operations. |
+| **Commander**; This power creep is not very useful on its own, but it’s a team player. It influences and affects regular creeps, both friendly and hostile. |
+| **Executor**; This creep class prefers working alone. Due to its skills, it’s a very effective performer in your economy or as a war machine when defending or attacking. |
 
 PCs have 0 to 25 development levels and skills (so-called “**powers**,” like superpowers). With each new level gained, you can add a new available skill or increase the level of any of the existing skills.
 
@@ -73,102 +58,27 @@ If you want to review how your PCs are configured and create them from scratch, 
 
 ### Operator
 
-<table><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/generate-ops.svg">
-        </td>
-        <th>GENERATE_OPS</th>
-        <td>Generate 1/2/4/6/8 ops resource units.  Cooldown 50 ticks.   Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-spawn.svg">
-        </td>
-        <th>OPERATE_SPAWN</th>
-        <td>Reduce spawn time by 10/30/50/65/80%</b>. Effect duration 1000 ticks. Cooldown 300 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-tower.svg">
-        </td>
-        <th>OPERATE_TOWER</th>
-        <td>Increase damage, repair and heal amount by 10/20/30/40/50%</b>. Effect duration 100 ticks. Cooldown 10 ticks. Range 3 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-storage.svg">
-        </td>
-        <th>OPERATE_STORAGE</th>
-        <td>Increase capacity by 500K/1M/2M/4M/7M units. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-lab.svg">
-        </td>
-        <th>OPERATE_LAB</th>
-        <td>Increase reaction amount by 2/4/6/8/10 units. Effect duration 1000 ticks. Cooldown 50 ticks. Range 3 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-extension.svg">
-        </td>
-        <th>OPERATE_EXTENSION</th>
-        <td>Instantly fill 20/40/60/80/100% of all extensions in the room using energy from the target structure (container, storage, or terminal).  Cooldown 50 ticks. Range 3 squares. Consumes 2 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-observer.svg">
-        </td>
-        <th>OPERATE_OBSERVER</th>
-        <td>Grant unlimited range. Effect duration 200/400/600/800/1000 ticks. Cooldown 400 ticks. Range 3 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-terminal.svg">
-        </td>
-        <th>OPERATE_TERMINAL</th>
-        <td>Decrease transfer energy cost and cooldown by 10/20/30/40/50%</b>. Effect duration 1000 ticks. Cooldown 500 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/disrupt-spawn.svg">
-        </td>
-        <th>DISRUPT_SPAWN</th>
-        <td>Pause spawning process. Effect duration 1/2/3/4/5 ticks. Cooldown 5 ticks. Range 20 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/disrupt-tower.svg">
-        </td>
-        <th>DISRUPT_TOWER</th>
-        <td>Reduce effectiveness by  10/20/30/40/50%</b>. Effect duration 5 ticks. No cooldown Range 50 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/disrupt-source.svg">
-        </td>
-        <th>DISRUPT_SOURCE</th>
-        <td>Pause energy regeneration. Effect duration 100/200/300/400/500 ticks. Cooldown 100 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/shield.svg">
-        </td>
-        <th>SHIELD</th>
-        <td>Create a temporary non-repairable rampart structure on the same square with 5K/10K/15K/20K/25K hits. Cannot be used on top of another rampart. Consumes 100 energy resource units. Effect duration 50 ticks. Cooldown 20 ticks.   Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/regen-source.svg">
-        </td>
-        <th>REGEN_SOURCE</th>
-        <td>Regenerate 50/100/150/200/250 energy units in a source every 15 ticks. Effect duration 300 ticks. Cooldown 100 ticks. Range 3 squares.  Required creep level: 10/11/12/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/regen-mineral.svg">
-        </td>
-        <th>REGEN_MINERAL</th>
-        <td>Regenerate 2/4/6/8/10 mineral units in a deposit every 10 ticks. Effect duration 100 ticks. Cooldown 100 ticks. Range 3 squares.  Required creep level: 10/11/12/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/disrupt-terminal.svg">
-        </td>
-        <th>DISRUPT_TERMINAL</th>
-        <td>Block withdrawing or using resources from the terminal. Effect duration 10 ticks. Cooldown 8 ticks. Range 50 squares. Consumes 50/40/30/20/10 ops resource units. Required creep level: 20/21/22/23/24.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-power.svg">
-        </td>
-        <th>OPERATE_POWER</th>
-        <td>Increase power processing speed of a Power Spawn by 1/2/3/4/5 units per tick. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 200 ops resource units. Required creep level: 10/11/12/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/fortify.svg">
-        </td>
-        <th>FORTIFY</th>
-        <td>Make a wall or rampart tile invulnerable to all creep attacks and powers. Effect duration 1/2/3/4/5 ticks. Cooldown 5 ticks. Range 3 squares. Consumes 5 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-controller.svg">
-        </td>
-        <th>OPERATE_CONTROLLER</th>
-        <td>Increase max limit of energy that can be used for upgrading a Level 8 Controller each tick by 10/20/30/40/50 energy units. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 200 ops resource units. Required creep level: 20/21/22/23/24.</td>
-        </tr><tr><td style="background: #141414; width: 50px; padding: 0; border-top: 1px solid #444">
-        <img src="https://screeps.com/a/app2/assets/powers/operator/operate-factory.svg">
-        </td>
-        <th>OPERATE_FACTORY</th>
-        <td>Set the level of the factory to the level of the power. This action is permanent, it cannot be undone, and another power level cannot be applied. Apply the same power again to renew its effect. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22.</td>
-        </tr></table>
+|  |  |
+| --- | --- |
+| **GENERATE_OPS** | Generate 1/2/4/6/8 ops resource units. Cooldown 50 ticks. Required creep level: 0/2/7/14/22. |
+| **OPERATE_SPAWN** | Reduce spawn time by 10/30/50/65/80%. Effect duration 1000 ticks. Cooldown 300 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_TOWER** | Increase damage, repair and heal amount by 10/20/30/40/50%. Effect duration 100 ticks. Cooldown 10 ticks. Range 3 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_STORAGE** | Increase capacity by 500K/1M/2M/4M/7M units. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_LAB** | Increase reaction amount by 2/4/6/8/10 units. Effect duration 1000 ticks. Cooldown 50 ticks. Range 3 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_EXTENSION** | Instantly fill 20/40/60/80/100% of all extensions in the room using energy from the target structure (container, storage, or terminal). Cooldown 50 ticks. Range 3 squares. Consumes 2 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_OBSERVER** | Grant unlimited range. Effect duration 200/400/600/800/1000 ticks. Cooldown 400 ticks. Range 3 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_TERMINAL** | Decrease transfer energy cost and cooldown by 10/20/30/40/50%. Effect duration 1000 ticks. Cooldown 500 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22. |
+| **DISRUPT_SPAWN** | Pause spawning process. Effect duration 1/2/3/4/5 ticks. Cooldown 5 ticks. Range 20 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22. |
+| **DISRUPT_TOWER** | Reduce effectiveness by 10/20/30/40/50%. Effect duration 5 ticks. No cooldown Range 50 squares. Consumes 10 ops resource units. Required creep level: 0/2/7/14/22. |
+| **DISRUPT_SOURCE** | Pause energy regeneration. Effect duration 100/200/300/400/500 ticks. Cooldown 100 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22. |
+| **SHIELD** | Create a temporary non-repairable rampart structure on the same square with 5K/10K/15K/20K/25K hits. Cannot be used on top of another rampart. Consumes 100 energy resource units. Effect duration 50 ticks. Cooldown 20 ticks. Required creep level: 0/2/7/14/22. |
+| **REGEN_SOURCE** | Regenerate 50/100/150/200/250 energy units in a source every 15 ticks. Effect duration 300 ticks. Cooldown 100 ticks. Range 3 squares. Required creep level: 10/11/12/14/22. |
+| **REGEN_MINERAL** | Regenerate 2/4/6/8/10 mineral units in a deposit every 10 ticks. Effect duration 100 ticks. Cooldown 100 ticks. Range 3 squares. Required creep level: 10/11/12/14/22. |
+| **DISRUPT_TERMINAL** | Block withdrawing or using resources from the terminal. Effect duration 10 ticks. Cooldown 8 ticks. Range 50 squares. Consumes 50/40/30/20/10 ops resource units. Required creep level: 20/21/22/23/24. |
+| **OPERATE_POWER** | Increase power processing speed of a Power Spawn by 1/2/3/4/5 units per tick. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 200 ops resource units. Required creep level: 10/11/12/14/22. |
+| **FORTIFY** | Make a wall or rampart tile invulnerable to all creep attacks and powers. Effect duration 1/2/3/4/5 ticks. Cooldown 5 ticks. Range 3 squares. Consumes 5 ops resource units. Required creep level: 0/2/7/14/22. |
+| **OPERATE_CONTROLLER** | Increase max limit of energy that can be used for upgrading a Level 8 Controller each tick by 10/20/30/40/50 energy units. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 200 ops resource units. Required creep level: 20/21/22/23/24. |
+| **OPERATE_FACTORY** | Set the level of the factory to the level of the power. This action is permanent, it cannot be undone, and another power level cannot be applied. Apply the same power again to renew its effect. Effect duration 1000 ticks. Cooldown 800 ticks. Range 3 squares. Consumes 100 ops resource units. Required creep level: 0/2/7/14/22. |
 
 ### Commander
 

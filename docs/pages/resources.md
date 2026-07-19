@@ -62,346 +62,48 @@ Each compound is applied to one body part of the creep of a certain type using t
 
 Boosting one body part takes 30 mineral compound units and 20 energy units. One body part can be boosted only with one compound type.
 
-<style>
-.minerals,
-.commodities {
-    margin-top: 0 !important;
-    border: 0 !important;
-    width: 100%;
-}
-.minerals td,
-.commodities td {
-    border-top: 1px solid #333;
-    color: #bbb;
-    background-color: #22242b;
-    font-size: 13px;
-}
-@media (min-width: 1280px) {
-    .minerals td:first-child {
-        white-space: nowrap;
-    }
-}
-.minerals td:nth-child(2) {
-    white-space: nowrap;
-}
-.minerals td:nth-child(3) {
-    text-align: center;
-}
-.minerals td:nth-child(4) {
-    min-width: 87px;
-}
-.minerals code {
-    background-color: #333;
-    color: #eee;
-    word-break: break-all;
-}
-.minerals img,
-.commodities img {
-    margin-right: 5px;
-    vertical-align: middle;
-}
-.minerals__divider th {
-    background-color: #333;
-    color: #ffe099;
-    text-align: center;
-    font-size: 13px;
-}
-.minerals__head th,
-.commodities__head th{
-    background-color: #22242b;
-    color: #ccc;
-    font-weight: normal !important;
-    font-size: 11px;
-}
+#### Mineral compounds
 
-.commodities em {
-    font-style: normal;
-    color: #eaeaea;
-}
-.commodities td {
-    padding: 10px 15px !important;
-}
-</style>
-
-<div class="collapsible-table">
-
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Mineral compounds</span>
-<em>(click to expand)</em>
-</div>
-
-<div class="collapsible-table__content">
-
-<table class="minerals">
-<colgroup>
-<col></col>
-<col></col>
-<col></col>
-<col></col>
-</colgroup>
-<tbody>
-<tr class=minerals__head>
-<th>Name</th>
-<th>Formula</th>
-<th>Time</th>
-<th>Body part</th>
-<th>Effect</th>
-</tr>
-<tr class=minerals__divider>
-<th colspan="5" align="center">Base compounds</th>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/OH.png)hydroxide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/H.png) + ![](//static.screeps.com/upload/mineral-icons/O.png)</td>
-<td>20</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/ZK.png)zynthium keanite</td>
-<td>![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/K.png)</td>
-<td>5</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/UL.png)utrium lemergite</td>
-<td>![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/L.png)</td>
-<td>5</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/G.png)ghodium</td>
-<td>![](//static.screeps.com/upload/mineral-icons/ZK.png) + ![](//static.screeps.com/upload/mineral-icons/UL.png)</td>
-<td>5</td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr class=minerals__divider>
-<th colspan="5" align="center">Tier 1 compounds</th>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/UH.png)utrium hydride</td>
-<td>![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/H.png)</td>
-<td>10</td>
-<td>`ATTACK`</td>
-<td>+100% `attack` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/UO.png)utrium oxide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/O.png)</td>
-<td>10</td>
-<td>`WORK`</td>
-<td>+200% `harvest` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/KH.png)keanium hydride</td>
-<td>![](//static.screeps.com/upload/mineral-icons/K.png) + ![](//static.screeps.com/upload/mineral-icons/H.png)</td>
-<td>10</td>
-<td>`CARRY`</td>
-<td>+50 capacity</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/KO.png)keanium oxide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/K.png) + ![](//static.screeps.com/upload/mineral-icons/O.png)</td>
-<td>10</td>
-<td>`RANGED_ATTACK`</td>
-<td>+100% `rangedAttack` and `rangedMassAttack` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/LH.png)lemergium hydride</td>
-<td>![](//static.screeps.com/upload/mineral-icons/L.png) + ![](//static.screeps.com/upload/mineral-icons/H.png)</td>
-<td>15</td>
-<td>`WORK`</td>
-<td>+50% `repair` and `build` effectiveness without increasing the energy cost</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/LO.png)lemergium oxide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/L.png) + ![](//static.screeps.com/upload/mineral-icons/O.png)</td>
-<td>10</td>
-<td>`HEAL`</td>
-<td>+100% `heal` and `rangedHeal` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/ZH.png)zynthium hydride</td>
-<td>![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/H.png)</td>
-<td>20</td>
-<td>`WORK`</td>
-<td>+100% `dismantle` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/ZO.png)zynthium oxide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/O.png)</td>
-<td>10</td>
-<td>`MOVE`</td>
-<td>+100% fatigue decrease speed</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/GH.png)ghodium hydride</td>
-<td>![](//static.screeps.com/upload/mineral-icons/G.png) + ![](//static.screeps.com/upload/mineral-icons/H.png)</td>
-<td>10</td>
-<td>`WORK`</td>
-<td>+50% `upgradeController` effectiveness without increasing the energy cost</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/GO.png)ghodium oxide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/G.png) + ![](//static.screeps.com/upload/mineral-icons/O.png)</td>
-<td>10</td>
-<td>`TOUGH`</td>
-<td>-30% damage taken</td>
-</tr>
-<tr class=minerals__divider>
-<th colspan="5" align="center">Tier 2 compounds</th>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/UH2O.png)utrium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/UH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>5</td>
-<td>`ATTACK`</td>
-<td>+200% `attack` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/UHO2.png)utrium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/UO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>5</td>
-<td>`WORK`</td>
-<td>+400% `harvest` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/KH2O.png)keanium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/KH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>5</td>
-<td>`CARRY`</td>
-<td>+100 capacity</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/KHO2.png)keanium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/KO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>5</td>
-<td>`RANGED_ATTACK`</td>
-<td>+200% `rangedAttack` and `rangedMassAttack` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/LH2O.png)lemergium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/LH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>10</td>
-<td>`WORK`</td>
-<td>+80% `repair` and `build` effectiveness without increasing the energy cost</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/LHO2.png)lemergium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/LO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>5</td>
-<td>`HEAL`</td>
-<td>+200% `heal` and `rangedHeal` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/ZH2O.png)zynthium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/ZH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>40</td>
-<td>`WORK`</td>
-<td>+200% `dismantle` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/ZHO2.png)zynthium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/ZO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>5</td>
-<td>`MOVE`</td>
-<td>+200% fatigue decrease speed</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/GH2O.png)ghodium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/GH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>15</td>
-<td>`WORK`</td>
-<td>+80% `upgradeController` effectiveness without increasing the energy cost</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/GHO2.png)ghodium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/GO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png)</td>
-<td>30</td>
-<td>`TOUGH`</td>
-<td>-50% damage taken</td>
-</tr>
-<tr class=minerals__divider>
-<th colspan="5" align="center">Tier 3 compounds</th>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XUH2O.png)catalyzed utrium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/UH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>60</td>
-<td>`ATTACK`</td>
-<td>+300% `attack` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XUHO2.png)catalyzed utrium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/UHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>60</td>
-<td>`WORK`</td>
-<td>+600% `harvest` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XKH2O.png)catalyzed keanium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/KH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>60</td>
-<td>`CARRY`</td>
-<td>+150 capacity</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XKHO2.png)catalyzed keanium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/KHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>60</td>
-<td>`RANGED_ATTACK`</td>
-<td>+300% `rangedAttack` and `rangedMassAttack` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XLH2O.png)catalyzed lemergium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/LH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>65</td>
-<td>`WORK`</td>
-<td>+100% `repair` and `build` effectiveness without increasing the energy cost</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XLHO2.png)catalyzed lemergium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/LHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>60</td>
-<td>`HEAL`</td>
-<td>+300% `heal` and `rangedHeal` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XZH2O.png)catalyzed zynthium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/ZH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>160</td>
-<td>`WORK`</td>
-<td>+300% `dismantle` effectiveness</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XZHO2.png)catalyzed zynthium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/ZHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>60</td>
-<td>`MOVE`</td>
-<td>+300% fatigue decrease speed</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XGH2O.png)catalyzed ghodium acid</td>
-<td>![](//static.screeps.com/upload/mineral-icons/GH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>80</td>
-<td>`WORK`</td>
-<td>+100% `upgradeController` effectiveness without increasing the energy cost</td>
-</tr>
-<tr>
-<td>![](//static.screeps.com/upload/mineral-icons/XGHO2.png)catalyzed ghodium alkalide</td>
-<td>![](//static.screeps.com/upload/mineral-icons/GHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png)</td>
-<td>150</td>
-<td>`TOUGH`</td>
-<td>-70% damage taken</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+| Name | Formula | Time | Body part | Effect |
+| --- | --- | --- | --- | --- |
+| **Base compounds** |  |  |  |  |
+| ![](//static.screeps.com/upload/mineral-icons/OH.png) hydroxide | ![](//static.screeps.com/upload/mineral-icons/H.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 20 | — | — |
+| ![](//static.screeps.com/upload/mineral-icons/ZK.png) zynthium keanite | ![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/K.png) | 5 | — | — |
+| ![](//static.screeps.com/upload/mineral-icons/UL.png) utrium lemergite | ![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/L.png) | 5 | — | — |
+| ![](//static.screeps.com/upload/mineral-icons/G.png) ghodium | ![](//static.screeps.com/upload/mineral-icons/ZK.png) + ![](//static.screeps.com/upload/mineral-icons/UL.png) | 5 | — | — |
+| **Tier 1 compounds** |  |  |  |  |
+| ![](//static.screeps.com/upload/mineral-icons/UH.png) utrium hydride | ![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 10 | `ATTACK` | +100% `attack` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/UO.png) utrium oxide | ![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `WORK` | +200% `harvest` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/KH.png) keanium hydride | ![](//static.screeps.com/upload/mineral-icons/K.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 10 | `CARRY` | +50 capacity |
+| ![](//static.screeps.com/upload/mineral-icons/KO.png) keanium oxide | ![](//static.screeps.com/upload/mineral-icons/K.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `RANGED_ATTACK` | +100% `rangedAttack` and `rangedMassAttack` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/LH.png) lemergium hydride | ![](//static.screeps.com/upload/mineral-icons/L.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 15 | `WORK` | +50% `repair` and `build` effectiveness without increasing the energy cost |
+| ![](//static.screeps.com/upload/mineral-icons/LO.png) lemergium oxide | ![](//static.screeps.com/upload/mineral-icons/L.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `HEAL` | +100% `heal` and `rangedHeal` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/ZH.png) zynthium hydride | ![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 20 | `WORK` | +100% `dismantle` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/ZO.png) zynthium oxide | ![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `MOVE` | +100% fatigue decrease speed |
+| ![](//static.screeps.com/upload/mineral-icons/GH.png) ghodium hydride | ![](//static.screeps.com/upload/mineral-icons/G.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 10 | `WORK` | +50% `upgradeController` effectiveness without increasing the energy cost |
+| ![](//static.screeps.com/upload/mineral-icons/GO.png) ghodium oxide | ![](//static.screeps.com/upload/mineral-icons/G.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `TOUGH` | -30% damage taken |
+| **Tier 2 compounds** |  |  |  |  |
+| ![](//static.screeps.com/upload/mineral-icons/UH2O.png) utrium acid | ![](//static.screeps.com/upload/mineral-icons/UH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `ATTACK` | +200% `attack` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/UHO2.png) utrium alkalide | ![](//static.screeps.com/upload/mineral-icons/UO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `WORK` | +400% `harvest` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/KH2O.png) keanium acid | ![](//static.screeps.com/upload/mineral-icons/KH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `CARRY` | +100 capacity |
+| ![](//static.screeps.com/upload/mineral-icons/KHO2.png) keanium alkalide | ![](//static.screeps.com/upload/mineral-icons/KO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `RANGED_ATTACK` | +200% `rangedAttack` and `rangedMassAttack` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/LH2O.png) lemergium acid | ![](//static.screeps.com/upload/mineral-icons/LH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 10 | `WORK` | +80% `repair` and `build` effectiveness without increasing the energy cost |
+| ![](//static.screeps.com/upload/mineral-icons/LHO2.png) lemergium alkalide | ![](//static.screeps.com/upload/mineral-icons/LO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `HEAL` | +200% `heal` and `rangedHeal` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/ZH2O.png) zynthium acid | ![](//static.screeps.com/upload/mineral-icons/ZH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 40 | `WORK` | +200% `dismantle` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/ZHO2.png) zynthium alkalide | ![](//static.screeps.com/upload/mineral-icons/ZO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `MOVE` | +200% fatigue decrease speed |
+| ![](//static.screeps.com/upload/mineral-icons/GH2O.png) ghodium acid | ![](//static.screeps.com/upload/mineral-icons/GH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 15 | `WORK` | +80% `upgradeController` effectiveness without increasing the energy cost |
+| ![](//static.screeps.com/upload/mineral-icons/GHO2.png) ghodium alkalide | ![](//static.screeps.com/upload/mineral-icons/GO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 30 | `TOUGH` | -50% damage taken |
+| **Tier 3 compounds** |  |  |  |  |
+| ![](//static.screeps.com/upload/mineral-icons/XUH2O.png) catalyzed utrium acid | ![](//static.screeps.com/upload/mineral-icons/UH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `ATTACK` | +300% `attack` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/XUHO2.png) catalyzed utrium alkalide | ![](//static.screeps.com/upload/mineral-icons/UHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `WORK` | +600% `harvest` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/XKH2O.png) catalyzed keanium acid | ![](//static.screeps.com/upload/mineral-icons/KH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `CARRY` | +150 capacity |
+| ![](//static.screeps.com/upload/mineral-icons/XKHO2.png) catalyzed keanium alkalide | ![](//static.screeps.com/upload/mineral-icons/KHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `RANGED_ATTACK` | +300% `rangedAttack` and `rangedMassAttack` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/XLH2O.png) catalyzed lemergium acid | ![](//static.screeps.com/upload/mineral-icons/LH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 65 | `WORK` | +100% `repair` and `build` effectiveness without increasing the energy cost |
+| ![](//static.screeps.com/upload/mineral-icons/XLHO2.png) catalyzed lemergium alkalide | ![](//static.screeps.com/upload/mineral-icons/LHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `HEAL` | +300% `heal` and `rangedHeal` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/XZH2O.png) catalyzed zynthium acid | ![](//static.screeps.com/upload/mineral-icons/ZH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 160 | `WORK` | +300% `dismantle` effectiveness |
+| ![](//static.screeps.com/upload/mineral-icons/XZHO2.png) catalyzed zynthium alkalide | ![](//static.screeps.com/upload/mineral-icons/ZHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `MOVE` | +300% fatigue decrease speed |
+| ![](//static.screeps.com/upload/mineral-icons/XGH2O.png) catalyzed ghodium acid | ![](//static.screeps.com/upload/mineral-icons/GH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 80 | `WORK` | +100% `upgradeController` effectiveness without increasing the energy cost |
+| ![](//static.screeps.com/upload/mineral-icons/XGHO2.png) catalyzed ghodium alkalide | ![](//static.screeps.com/upload/mineral-icons/GHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 150 | `TOUGH` | -70% damage taken |
 
 ## Commodities
 
@@ -432,85 +134,52 @@ This is why it's a better idea to build a [**Factory**](/api/#StructureFactory) 
 A newly built factory has no level which means it can produce just a few basic commodities out of all kinds of existing resources ("any level" tier in the tables below).
 They also can be used to store resources in a "compressed" form.
 
-<div class="collapsible-table">
+#### Compressing commodities
 
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Compressing commodities</span>
-<em>(click to expand)</em>
 ![](img/commodities1.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tbody>
-<tr class=commodities__head>
-<th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th>
-</tr>
-<tr><td>Utrium bar&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/U.png)Utrium&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Lemergium bar&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/L.png)Lemergium&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Zynthium bar&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/Z.png)Zynthium&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Keanium bar&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/K.png)Keanium&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Ghodium melt&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/G.png)Ghodium&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Oxidant&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/O.png)Oxygen&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Reductant&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/H.png)Hydrogen&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Purifier&nbsp;&times;&nbsp;<em>100</em></td><td>Any level</td><td>![](//static.screeps.com/upload/mineral-icons/X.png)Catalyst&nbsp;&times;&nbsp;<em>500</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
-<tr><td>Battery&nbsp;&times;&nbsp;<em>50</em></td><td>Any level</td><td>Energy&nbsp;&times;&nbsp;<em>600</em></td><td>10&nbsp;ticks</td></tr>
-</tbody>
-</table>
-
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Utrium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/U.png) Utrium × *500*; Energy × *200* | 20 ticks |
+| Lemergium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/L.png) Lemergium × *500*; Energy × *200* | 20 ticks |
+| Zynthium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/Z.png) Zynthium × *500*; Energy × *200* | 20 ticks |
+| Keanium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/K.png) Keanium × *500*; Energy × *200* | 20 ticks |
+| Ghodium melt × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/G.png) Ghodium × *500*; Energy × *200* | 20 ticks |
+| Oxidant × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/O.png) Oxygen × *500*; Energy × *200* | 20 ticks |
+| Reductant × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/H.png) Hydrogen × *500*; Energy × *200* | 20 ticks |
+| Purifier × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/X.png) Catalyst × *500*; Energy × *200* | 20 ticks |
+| Battery × *50* | Any level | Energy × *600* | 10 ticks |
 
  You can decompress to recover raw resources when you need them.
 
- <div class="collapsible-table">
+#### Decompressing commodities
 
- <div class="collapsible-table__header">
- <i class="fa fa-plus-square"></i>
- <span>Decompressing commodities</span>
- <em>(click to expand)</em>
- ![](img/commodities2.png)
- </div>
+![](img/commodities2.png)
 
- <div class="collapsible-table__content">
- <table class="commodities">
- <tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/U.png)Utrium&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Utrium bar&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/L.png)Lemergium&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Lemergium bar&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/Z.png)Zynthium&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Zynthium bar&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/K.png)Keanium&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Keanium bar&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/G.png)Ghodium&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Ghodium melt&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/O.png)Oxygen&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Oxidant&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/H.png)Hydrogen&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Reductant&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>![](//static.screeps.com/upload/mineral-icons/X.png)Catalyst&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Purifier&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>200</em></td><td>20&nbsp;ticks</td></tr>
- <tr><td>Energy&nbsp;&times;&nbsp;<em>500</em></td><td>Any level</td><td>Battery&nbsp;&times;&nbsp;<em>50</em></td><td>10&nbsp;ticks</td></tr>
- </table>
-
- </div>
- </div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| ![](//static.screeps.com/upload/mineral-icons/U.png) Utrium × *500* | Any level | Utrium bar × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/L.png) Lemergium × *500* | Any level | Lemergium bar × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/Z.png) Zynthium × *500* | Any level | Zynthium bar × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/K.png) Keanium × *500* | Any level | Keanium bar × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/G.png) Ghodium × *500* | Any level | Ghodium melt × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/O.png) Oxygen × *500* | Any level | Oxidant × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/H.png) Hydrogen × *500* | Any level | Reductant × *100*; Energy × *200* | 20 ticks |
+| ![](//static.screeps.com/upload/mineral-icons/X.png) Catalyst × *500* | Any level | Purifier × *100*; Energy × *200* | 20 ticks |
+| Energy × *500* | Any level | Battery × *50* | 10 ticks |
 
  When you gain access to regional deposit resources, you can start producing additional basic commodities from them.
 
-<div class="collapsible-table">
+#### Basic regional commodities
 
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Basic regional commodities</span>
-<em>(click to expand)</em>
 ![](img/commodities3.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
-<tr><td>Wire&nbsp;&times;&nbsp;<em>20</em></td><td>Any level</td><td>Utrium bar&nbsp;&times;&nbsp;<em>20</em><br>Silicon&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>40</em></td><td>8&nbsp;ticks</td></tr>
-<tr><td>Cell&nbsp;&times;&nbsp;<em>20</em></td><td>Any level</td><td>Lemergium bar&nbsp;&times;&nbsp;<em>20</em><br>Biomass&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>40</em></td><td>8&nbsp;ticks</td>
-<tr><td>Alloy&nbsp;&times;&nbsp;<em>20</em></td><td>Any level</td><td>Zynthium bar&nbsp;&times;&nbsp;<em>20</em><br>Metal&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>40</em></td><td>8&nbsp;ticks</td></tr>
-<tr><td>Condensate&nbsp;&times;&nbsp;<em>20</em></td><td>Any level</td><td>Keanium bar&nbsp;&times;&nbsp;<em>20</em><br>Mist&nbsp;&times;&nbsp;<em>100</em><br>Energy&nbsp;&times;&nbsp;<em>40</em></td><td>8&nbsp;ticks</td></tr>
-</table>
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Wire × *20* | Any level | Utrium bar × *20*; Silicon × *100*; Energy × *40* | 8 ticks |
+| Cell × *20* | Any level | Lemergium bar × *20*; Biomass × *100*; Energy × *40* | 8 ticks |
+| Alloy × *20* | Any level | Zynthium bar × *20*; Metal × *100*; Energy × *40* | 8 ticks |
+| Condensate × *20* | Any level | Keanium bar × *20*; Mist × *100*; Energy × *40* | 8 ticks |
 
 All commodities above can be produced in a factory of any level.
 
@@ -529,103 +198,63 @@ Each of high-level commodities requires lower level commodities to be produced w
 **Mechanical** (consumes Metal), **Electronical** (consumes Silicon), **Biological** (consumes Biomass), and **Mystical** (consumes Mist), as well as common components.
 These commodities have the most lucrative prices on the market.
 
-<div class="collapsible-table">
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Common higher commodities</span>
-<em>(click to expand)</em>
+#### Common higher commodities
+
 ![](img/commodities4.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
-<tr><td>Composite&nbsp;&times;&nbsp;<em>20</em></td><td>Lvl 1</td><td>Utrium bar&nbsp;&times;&nbsp;<em>20</em><br>Zynthium bar&nbsp;&times;&nbsp;<em>20</em><br>Energy&nbsp;&times;&nbsp;<em>20</em></td><td>50&nbsp;ticks</td></tr>
-<tr><td>Crystal&nbsp;&times;&nbsp;<em>6</em></td><td>Lvl 2</td><td>Lemergium bar&nbsp;&times;&nbsp;<em>6</em><br>Keanium bar&nbsp;&times;&nbsp;<em>6</em><br>Purifier&nbsp;&times;&nbsp;<em>6</em><br>Energy&nbsp;&times;&nbsp;<em>45</em></td><td>21&nbsp;ticks</td></tr>
-<tr><td>Liquid&nbsp;&times;&nbsp;<em>12</em></td><td>Lvl 3</td><td>Oxidant&nbsp;&times;&nbsp;<em>12</em><br>Reductant&nbsp;&times;&nbsp;<em>12</em><br>Ghodium melt&nbsp;&times;&nbsp;<em>12</em><br>Energy&nbsp;&times;&nbsp;<em>90</em></td><td>60&nbsp;ticks</td></tr>
-</table>
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Composite × *20* | Lvl 1 | Utrium bar × *20*; Zynthium bar × *20*; Energy × *20* | 50 ticks |
+| Crystal × *6* | Lvl 2 | Lemergium bar × *6*; Keanium bar × *6*; Purifier × *6*; Energy × *45* | 21 ticks |
+| Liquid × *12* | Lvl 3 | Oxidant × *12*; Reductant × *12*; Ghodium melt × *12*; Energy × *90* | 60 ticks |
 
-<div class="collapsible-table">
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Mechanical chain</span>
-<em>(click to expand)</em>
+#### Mechanical chain
+
 ![](img/commodities5.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
-<tr><td>Tube&nbsp;&times;&nbsp;<em>2</em></td><td>Lvl 1</td><td>Alloy&nbsp;&times;&nbsp;<em>40</em><br>Zynthium bar&nbsp;&times;&nbsp;<em>16</em><br>Energy&nbsp;&times;&nbsp;<em>8</em></td><td>45&nbsp;ticks</td></tr>
-<tr><td>Fixtures</td><td>Lvl 2</td><td>Composite&nbsp;&times;&nbsp;<em>20</em><br>Alloy&nbsp;&times;&nbsp;<em>41</em><br>Oxidant&nbsp;&times;&nbsp;<em>161</em><br>Energy&nbsp;&times;&nbsp;<em>8</em></td><td>115&nbsp;ticks</td></tr>
-<tr><td>Frame</td><td>Lvl 3</td><td>Fixtures&nbsp;&times;&nbsp;<em>2</em><br>Tube&nbsp;&times;&nbsp;<em>4</em><br>Reductant&nbsp;&times;&nbsp;<em>330</em><br>Zynthium bar&nbsp;&times;&nbsp;<em>31</em><br>Energy&nbsp;&times;&nbsp;<em>16</em></td><td>125&nbsp;ticks</td></tr>
-<tr><td>Hydraulics</td><td>Lvl 4</td><td>Liquid&nbsp;&times;&nbsp;<em>150</em><br>Fixtures&nbsp;&times;&nbsp;<em>3</em><br>Tube&nbsp;&times;&nbsp;<em>15</em><br>Purifier&nbsp;&times;&nbsp;<em>208</em><br>Energy&nbsp;&times;&nbsp;<em>32</em></td><td>800&nbsp;ticks</td></tr>
-<tr><td>Machine</td><td>Lvl 5</td><td>Hydraulics&nbsp;&times;&nbsp;<em>1</em><br>Frame&nbsp;&times;&nbsp;<em>2</em><br>Fixtures&nbsp;&times;&nbsp;<em>3</em><br>Tube&nbsp;&times;&nbsp;<em>12</em><br>Energy&nbsp;&times;&nbsp;<em>64</em></td><td>600&nbsp;ticks</td></tr>
-</table>
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Tube × *2* | Lvl 1 | Alloy × *40*; Zynthium bar × *16*; Energy × *8* | 45 ticks |
+| Fixtures | Lvl 2 | Composite × *20*; Alloy × *41*; Oxidant × *161*; Energy × *8* | 115 ticks |
+| Frame | Lvl 3 | Fixtures × *2*; Tube × *4*; Reductant × *330*; Zynthium bar × *31*; Energy × *16* | 125 ticks |
+| Hydraulics | Lvl 4 | Liquid × *150*; Fixtures × *3*; Tube × *15*; Purifier × *208*; Energy × *32* | 800 ticks |
+| Machine | Lvl 5 | Hydraulics × *1*; Frame × *2*; Fixtures × *3*; Tube × *12*; Energy × *64* | 600 ticks |
 
-<div class="collapsible-table">
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Biological chain</span>
-<em>(click to expand)</em>
+#### Biological chain
+
 ![](img/commodities6.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
-<tr><td>Phlegm&nbsp;&times;&nbsp;<em>2</em></td><td>Lvl 1</td><td>Cell&nbsp;&times;&nbsp;<em>20</em><br>Oxidant&nbsp;&times;&nbsp;<em>36</em><br>Lemergium bar&nbsp;&times;&nbsp;<em>16</em><br>Energy&nbsp;&times;&nbsp;<em>8</em></td><td>35&nbsp;ticks</td></tr>
-<tr><td>Tissue&nbsp;&times;&nbsp;<em>2</em></td><td>Lvl 2</td><td>Phlegm&nbsp;&times;&nbsp;<em>10</em><br>Cell&nbsp;&times;&nbsp;<em>10</em><br>Reductant&nbsp;&times;&nbsp;<em>110</em><br>Energy&nbsp;&times;&nbsp;<em>16</em></td><td>164&nbsp;ticks</td></tr>
-<tr><td>Muscle</td><td>Lvl 3</td><td>Tissue&nbsp;&times;&nbsp;<em>3</em><br>Phlegm&nbsp;&times;&nbsp;<em>3</em><br>Zynthium bar&nbsp;&times;&nbsp;<em>50</em><br>Reductant&nbsp;&times;&nbsp;<em>50</em><br>Energy&nbsp;&times;&nbsp;<em>16</em></td><td>250&nbsp;ticks</td></tr>
-<tr><td>Organoid</td><td>Lvl 4</td><td>Muscle&nbsp;&times;&nbsp;<em>1</em><br>Tissue&nbsp;&times;&nbsp;<em>5</em><br>Purifier&nbsp;&times;&nbsp;<em>208</em><br>Oxidant&nbsp;&times;&nbsp;<em>256</em><br>Energy&nbsp;&times;&nbsp;<em>32</em></td><td>800&nbsp;ticks</td></tr>
-<tr><td>Organism</td><td>Lvl 5</td><td>Organoid&nbsp;&times;&nbsp;<em>1</em><br>Liquid&nbsp;&times;&nbsp;<em>150</em><br>Tissue&nbsp;&times;&nbsp;<em>6</em><br>Cell&nbsp;&times;&nbsp;<em>310</em><br>Energy&nbsp;&times;&nbsp;<em>64</em></td><td>600&nbsp;ticks</td></tr>
-</table>
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Phlegm × *2* | Lvl 1 | Cell × *20*; Oxidant × *36*; Lemergium bar × *16*; Energy × *8* | 35 ticks |
+| Tissue × *2* | Lvl 2 | Phlegm × *10*; Cell × *10*; Reductant × *110*; Energy × *16* | 164 ticks |
+| Muscle | Lvl 3 | Tissue × *3*; Phlegm × *3*; Zynthium bar × *50*; Reductant × *50*; Energy × *16* | 250 ticks |
+| Organoid | Lvl 4 | Muscle × *1*; Tissue × *5*; Purifier × *208*; Oxidant × *256*; Energy × *32* | 800 ticks |
+| Organism | Lvl 5 | Organoid × *1*; Liquid × *150*; Tissue × *6*; Cell × *310*; Energy × *64* | 600 ticks |
 
-<div class="collapsible-table">
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Electronical chain</span>
-<em>(click to expand)</em>
+#### Electronical chain
+
 ![](img/commodities7.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
-<tr><td>Switch&nbsp;&times;&nbsp;<em>5</em></td><td>Lvl 1</td><td>Wire&nbsp;&times;&nbsp;<em>40</em><br>Oxidant&nbsp;&times;&nbsp;<em>95</em><br>Utrium bar&nbsp;&times;&nbsp;<em>35</em><br>Energy&nbsp;&times;&nbsp;<em>20</em></td><td>70&nbsp;ticks</td></tr>
-<tr><td>Transistor</td><td>Lvl 2</td><td>Switch&nbsp;&times;&nbsp;<em>4</em><br>Wire&nbsp;&times;&nbsp;<em>15</em><br>Reductant&nbsp;&times;&nbsp;<em>85</em><br>Energy&nbsp;&times;&nbsp;<em>8</em></td><td>59&nbsp;ticks</td></tr>
-<tr><td>Microchip</td><td>Lvl 3</td><td>Transistor&nbsp;&times;&nbsp;<em>2</em><br>Composite&nbsp;&times;&nbsp;<em>50</em><br>Wire&nbsp;&times;&nbsp;<em>117</em><br>Purifier&nbsp;&times;&nbsp;<em>25</em><br>Energy&nbsp;&times;&nbsp;<em>16</em></td><td>250&nbsp;ticks</td></tr>
-<tr><td>Circuit</td><td>Lvl 4</td><td>Microchip&nbsp;&times;&nbsp;<em>1</em><br>Transistor&nbsp;&times;&nbsp;<em>5</em><br>Switch&nbsp;&times;&nbsp;<em>4</em><br>Oxidant&nbsp;&times;&nbsp;<em>115</em><br>Energy&nbsp;&times;&nbsp;<em>32</em></td><td>800&nbsp;ticks</td></tr>
-<tr><td>Device</td><td>Lvl 5</td><td>Circuit&nbsp;&times;&nbsp;<em>1</em><br>Microchip&nbsp;&times;&nbsp;<em>3</em><br>Crystal&nbsp;&times;&nbsp;<em>110</em><br>Ghodium melt&nbsp;&times;&nbsp;<em>150</em><br>Energy&nbsp;&times;&nbsp;<em>64</em></td><td>600&nbsp;ticks</td></tr>
-</table>
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Switch × *5* | Lvl 1 | Wire × *40*; Oxidant × *95*; Utrium bar × *35*; Energy × *20* | 70 ticks |
+| Transistor | Lvl 2 | Switch × *4*; Wire × *15*; Reductant × *85*; Energy × *8* | 59 ticks |
+| Microchip | Lvl 3 | Transistor × *2*; Composite × *50*; Wire × *117*; Purifier × *25*; Energy × *16* | 250 ticks |
+| Circuit | Lvl 4 | Microchip × *1*; Transistor × *5*; Switch × *4*; Oxidant × *115*; Energy × *32* | 800 ticks |
+| Device | Lvl 5 | Circuit × *1*; Microchip × *3*; Crystal × *110*; Ghodium melt × *150*; Energy × *64* | 600 ticks |
 
-<div class="collapsible-table">
-<div class="collapsible-table__header">
-<i class="fa fa-plus-square"></i>
-<span>Mystical chain</span>
-<em>(click to expand)</em>
+#### Mystical chain
+
 ![](img/commodities8.png)
-</div>
 
-<div class="collapsible-table__content">
-<table class="commodities">
-<tr class="commodities__head"><th>Product</th><th>Factory</th><th>Components</th><th>Cooldown</th></tr>
-<tr><td>Concentrate&nbsp;&times;&nbsp;<em>3</em></td><td>Lvl 1</td><td>Condensate&nbsp;&times;&nbsp;<em>30</em><br>Keanium bar&nbsp;&times;&nbsp;<em>15</em><br>Reductant&nbsp;&times;&nbsp;<em>54</em><br>Energy&nbsp;&times;&nbsp;<em>12</em></td><td>41&nbsp;ticks</td></tr>
-<tr><td>Extract&nbsp;&times;&nbsp;<em>2</em></td><td>Lvl 2</td><td>Concentrate&nbsp;&times;&nbsp;<em>10</em><br>Condensate&nbsp;&times;&nbsp;<em>30</em><br>Oxidant&nbsp;&times;&nbsp;<em>60</em><br>Energy&nbsp;&times;&nbsp;<em>16</em></td><td>128&nbsp;ticks</td></tr>
-<tr><td>Spirit</td><td>Lvl 3</td><td>Extract&nbsp;&times;&nbsp;<em>2</em><br>Concentrate&nbsp;&times;&nbsp;<em>6</em><br>Reductant&nbsp;&times;&nbsp;<em>90</em><br>Purifier&nbsp;&times;&nbsp;<em>20</em><br>Energy&nbsp;&times;&nbsp;<em>16</em></td><td>200&nbsp;ticks</td></tr>
-<tr><td>Emanation</td><td>Lvl 4</td><td>Spirit&nbsp;&times;&nbsp;<em>2</em><br>Extract&nbsp;&times;&nbsp;<em>2</em><br>Concentrate&nbsp;&times;&nbsp;<em>3</em><br>Keanium bar&nbsp;&times;&nbsp;<em>112</em><br>Energy&nbsp;&times;&nbsp;<em>32</em></td><td>800&nbsp;ticks</td></tr>
-<tr><td>Essence</td><td>Lvl 5</td><td>Emanation&nbsp;&times;&nbsp;<em>1</em><br>Spirit&nbsp;&times;&nbsp;<em>3</em><br>Crystal&nbsp;&times;&nbsp;<em>110</em><br>Ghodium melt&nbsp;&times;&nbsp;<em>150</em><br>Energy&nbsp;&times;&nbsp;<em>64</em></td><td>600&nbsp;ticks</td></tr>
-</table>
-</div>
-</div>
+| Product | Factory | Components | Cooldown |
+| --- | --- | --- | --- |
+| Concentrate × *3* | Lvl 1 | Condensate × *30*; Keanium bar × *15*; Reductant × *54*; Energy × *12* | 41 ticks |
+| Extract × *2* | Lvl 2 | Concentrate × *10*; Condensate × *30*; Oxidant × *60*; Energy × *16* | 128 ticks |
+| Spirit | Lvl 3 | Extract × *2*; Concentrate × *6*; Reductant × *90*; Purifier × *20*; Energy × *16* | 200 ticks |
+| Emanation | Lvl 4 | Spirit × *2*; Extract × *2*; Concentrate × *3*; Keanium bar × *112*; Energy × *32* | 800 ticks |
+| Essence | Lvl 5 | Emanation × *1*; Spirit × *3*; Crystal × *110*; Ghodium melt × *150*; Energy × *64* | 600 ticks |
 
 ## Power
 

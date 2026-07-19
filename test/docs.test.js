@@ -27,6 +27,7 @@ test('bundles clean authored guide pages without the generated API reference', a
     const markdown = await readDocsPage(page.file)
     assert.ok(markdown.startsWith(`# ${page.title}\n\n`), page.command)
     assert.doesNotMatch(markdown, /\{%|^title:/m, page.command)
+    assert.doesNotMatch(markdown, /<\/?(?:table|thead|tbody|tfoot|tr|th|td)\b/i, page.command)
   }
 })
 
