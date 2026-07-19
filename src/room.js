@@ -49,7 +49,7 @@ function glyphFor(object, ownUserId) {
 export function renderRoom({ name, terrain, objects, ownUserId, gameTime, color = process.stdout.isTTY }) {
   const cells = indexObjects(objects)
   const lines = []
-  const title = `${name}${gameTime == null ? '' : `  tick ${gameTime}`}`
+  const title = `${name}${gameTime == null ? '' : `  tick ${new Intl.NumberFormat('en').format(gameTime)}`}`
   lines.push(title, `   ${Array.from({ length: 50 }, (_, x) => Math.floor(x / 10) || ' ').join('')}`, `   ${Array.from({ length: 50 }, (_, x) => x % 10).join('')}`)
   for (let y = 0; y < 50; y++) {
     let row = `${String(y).padStart(2, '0')} `
@@ -225,7 +225,8 @@ export function renderWorldMap(center, radius, response) {
   const stats = response?.stats || {}
   const users = response?.users || {}
   const names = new Map()
-  const lines = [`World around ${center}  tick ${response?.gameTime ?? '?'}`, 'Symbol: . neutral  0 reserved  1-8 controller level  # closed']
+  const tick = Number.isFinite(response?.gameTime) ? new Intl.NumberFormat('en').format(response.gameTime) : '?'
+  const lines = [`${center} · tick ${tick}`, '. neutral · 0 reserved · 1-8 RCL · # closed']
   for (let y = origin.y - radius; y <= origin.y + radius; y++) {
     const row = []
     for (let x = origin.x - radius; x <= origin.x + radius; x++) {

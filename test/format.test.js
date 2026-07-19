@@ -12,12 +12,13 @@ test('formats status as a short player summary', () => {
     rooms: ['E1S1'],
     attention: ['1 unread message.']
   })
-  assert.equal(text, 'Ada · normal\nhttp://example.test:21025 · shard0 · tick 1,234\nRooms: E1S1\nCPU 100 · GCL progress 2 · Power 3 · Credits 42\nAttention: 1 unread message.')
+  assert.equal(text, 'Ada at example.test:21025 · shard0 · tick 1,234\nRoom: E1S1\nCPU 100 · GCL progress 2 · Power 3 · 42 credits\nNeeds attention: 1 unread message.')
 })
 
 test('formats room and market empty states plainly', () => {
   assert.equal(formatRooms({ rooms: [] }), 'You have no rooms.')
   assert.equal(formatMarketOrders({ list: [] }, 'energy'), 'No energy orders.')
+  assert.equal(formatMyOrders({ list: [] }), 'No active orders.')
 })
 
 test('includes actionable IDs in market order listings', () => {

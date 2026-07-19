@@ -2,13 +2,18 @@ function number(value, fallback = '—') {
   return Number.isFinite(value) ? new Intl.NumberFormat('en').format(value) : fallback
 }
 
-export function formatStatus({ server, shard, tick, player, worldStatus, rooms, attention = [] }) {
+export function formatStatus({ server, shard, tick, player, rooms, attention = [] }) {
+  const host = (() => {
+    try { return new URL(server).host } catch { return server }
+  })()
+  const economy = [`CPU ${number(player.cpu)}`, `GCL progress ${number(player.gclProgress)}`]
+  if (player.powerProcessed) economy.push(`Power ${number(player.powerProcessed)}`)
+  economy.push(`${number(player.credits, '0')} credits`)
   return [
-    `${player.username} · ${worldStatus || 'unknown'}`,
-    `${server}${shard ? ` · ${shard}` : ''} · tick ${number(tick)}`,
-    `Rooms: ${rooms.length ? rooms.join(', ') : 'none'}`,
-    `CPU ${number(player.cpu)} · GCL progress ${number(player.gclProgress)} · Power ${number(player.powerProcessed, '0')} · Credits ${number(player.credits, '0')}`,
-    `Attention: ${attention.length ? attention.join(' ') : 'nothing right now'}`
+    `${player.username} at ${host}${shard ? ` · ${shard}` : ''} · tick ${number(tick)}`,
+    `${rooms.length === 1 ? 'Room' : 'Rooms'}: ${rooms.length ? rooms.join(', ') : 'none'}`,
+    economy.join(' · '),
+    attention.length ? `Needs attention: ${attention.join(' ')}` : 'All quiet.'
   ].join('\n')
 }
 
@@ -43,7 +48,7 @@ export function formatMarketOrders(response, resource) {
 
 export function formatMyOrders(response) {
   const orders = response?.list || []
-  if (!orders.length) return 'You have no market orders.'
+  if (!orders.length) return 'No active orders.'
   return orders.map(order => {
     const amount = order.remainingAmount ?? order.amount
     const room = order.roomName ? ` in ${order.roomName}` : ''

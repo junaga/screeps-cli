@@ -47,6 +47,12 @@ test('command groups expose detailed help and implementation seams stay hidden',
   assert.match(code.stdout, /--branch <name>/)
   assert.match(code.stdout, /^  branches\b/m)
   assert.match(code.stdout, /^  use\b/m)
+
+  const memory = spawnSync(process.execPath, ['bin/screeps.js', 'memory', '--help'], { encoding: 'utf8' })
+  const market = spawnSync(process.execPath, ['bin/screeps.js', 'market', '--help'], { encoding: 'utf8' })
+  assert.doesNotMatch(code.stdout, /^  diff\b/m)
+  assert.doesNotMatch(memory.stdout, /^  get\b/m)
+  assert.doesNotMatch(market.stdout, /^  (mine|orders)\b/m)
 })
 
 test('unknown targets fail before attempting a server connection', () => {

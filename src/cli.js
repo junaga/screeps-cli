@@ -250,23 +250,29 @@ async function liveRoom(api, room, options, ownUserId) {
 }
 
 function objectExpression(id) {
-  return `(()=>{const o=Game.getObjectById(${JSON.stringify(id)});if(!o)return null;return {id:o.id,type:o.structureType||o.constructor?.name||'object',name:o.name,pos:o.pos&&{room:o.pos.roomName,x:o.pos.x,y:o.pos.y},owner:o.owner?.username,hits:o.hits,hitsMax:o.hitsMax,level:o.level,progress:o.progress,progressTotal:o.progressTotal,ticksToLive:o.ticksToLive,fatigue:o.fatigue,store:o.store&&Object.fromEntries(Object.entries(o.store)),body:o.body?.map(p=>({type:p.type,hits:p.hits,boost:p.boost}))}})()`
+  return `(()=>{const o=Game.getObjectById(${JSON.stringify(id)});if(!o)return null;const type=o.structureType||(o.className?'power creep':o.body?'creep':o.mineralType?'mineral':o.depositType?'deposit':o.resourceType?'resource':o.level!=null&&o.progressTotal!=null?'controller':'object');return {id:o.id,type,name:o.name,pos:o.pos&&{room:o.pos.roomName,x:o.pos.x,y:o.pos.y},owner:o.owner?.username,hits:o.hits,hitsMax:o.hitsMax,level:o.level,progress:o.progress,progressTotal:o.progressTotal,ticksToLive:o.ticksToLive,fatigue:o.fatigue,store:o.store&&Object.fromEntries(Object.entries(o.store)),body:o.body?.map(p=>({type:p.type,hits:p.hits,boost:p.boost}))}})()`
 }
+
+const displayNumber = value => new Intl.NumberFormat('en').format(value)
 
 async function objectSnapshot(api, id, options) {
   const object = await runGameExpression(api, objectExpression(id), options.shard)
   if (!object) throw new Error(`Object ${id} is not visible.`)
   if (options.silent) return object
   if (options.json) return output(object, { json: true })
-  const lines = [`${object.type}${object.name ? ` ${object.name}` : ''}  ${object.id}`]
-  if (object.pos) lines.push(`${object.pos.room} ${object.pos.x},${object.pos.y}`)
-  if (object.owner) lines.push(`Owner: ${object.owner}`)
-  if (object.hits != null) lines.push(`Hits: ${object.hits}/${object.hitsMax}`)
-  if (object.store) lines.push(`Store: ${Object.entries(object.store).map(([resource, amount]) => `${amount} ${resource}`).join(', ') || 'empty'}`)
-  if (object.level != null) lines.push(`Level: ${object.level}`)
-  if (object.progress != null) lines.push(`Progress: ${object.progress}/${object.progressTotal}`)
-  if (object.ticksToLive != null) lines.push(`Life: ${object.ticksToLive} ticks`)
-  if (object.body) lines.push(`Body: ${object.body.map(part => part.type).join(' ')}`)
+  const lines = [`${object.type}${object.name ? ` ${object.name}` : ''}`]
+  const identity = []
+  if (object.pos) identity.push(`${object.pos.room} ${object.pos.x},${object.pos.y}`)
+  if (object.owner) identity.push(object.owner)
+  if (identity.length) lines.push(identity.join(' · '))
+  const condition = []
+  if (object.hits != null) condition.push(`${displayNumber(object.hits)}/${displayNumber(object.hitsMax)} hits`)
+  if (object.store) condition.push(...Object.entries(object.store).map(([resource, amount]) => `${displayNumber(amount)} ${resource}`))
+  if (object.level != null) condition.push(`level ${object.level}`)
+  if (object.progress != null) condition.push(`${displayNumber(object.progress)}/${displayNumber(object.progressTotal)} progress`)
+  if (object.ticksToLive != null) condition.push(`${displayNumber(object.ticksToLive)} ticks left`)
+  if (condition.length) lines.push(condition.join(' · '))
+  if (object.body) lines.push(object.body.map(part => String(part.type).toUpperCase()).join(' '))
   output(lines.join('\n'))
   return object
 }
@@ -283,11 +289,12 @@ async function playerSnapshot(api, player, options) {
   }
   if (options.json) return output(result, { json: true })
   const user = result.player
-  const lines = [`@${user.username}`]
-  if (user.gcl != null) lines.push(`GCL progress: ${user.gcl}`)
-  if (result.control?.rank != null) lines.push(`World rank: ${result.control.rank}`)
-  if (user.power != null) lines.push(`Power processed: ${user.power}`)
-  if (result.power?.rank != null) lines.push(`Power rank: ${result.power.rank}`)
+  const details = []
+  if (user.gcl != null) details.push(`GCL progress ${displayNumber(user.gcl)}`)
+  if (result.control?.rank != null) details.push(`world rank ${displayNumber(result.control.rank)}`)
+  if (user.power != null) details.push(`power ${displayNumber(user.power)}`)
+  if (result.power?.rank != null) details.push(`power rank ${displayNumber(result.power.rank)}`)
+  const lines = [`@${user.username}${details.length ? ` · ${details.join(' · ')}` : ''}`]
   output(lines.join('\n'))
 }
 
@@ -352,10 +359,16 @@ async function watchRooms(api, targets, options) {
   }
 
   const announce = event => {
-    if (options.json) output(event, { ndjson: true })
-    else output(`${event.tick}  ${event.room}  ${event.message}`)
+    if (options.json) output({ type: 'event', ...event }, { ndjson: true })
+    else output(`${displayNumber(event.tick)}  ${rooms.length > 1 ? `${event.room}  ` : ''}${event.message}`)
   }
-  for (const room of rooms) announce({ tick: ticks.get(room), room, message: `Watching from tick ${ticks.get(room)}.` })
+  if (options.json) {
+    for (const room of rooms) output({ type: 'start', tick: ticks.get(room), room }, { ndjson: true })
+  } else if (rooms.length === 1) {
+    output(`Watching ${rooms[0]} from tick ${displayNumber(ticks.get(rooms[0]))}.`)
+  } else {
+    output(`Watching ${rooms.length} rooms. Press Ctrl-C to stop.`)
+  }
 
   try {
     for (const room of rooms) {
@@ -363,7 +376,7 @@ async function watchRooms(api, targets, options) {
         const tick = event.data.gameTime ?? ticks.get(room)
         ticks.set(room, tick)
         if (options.raw) {
-          if (options.json) output({ tick, room, data: event.data }, { ndjson: true })
+          if (options.json) output({ type: 'patch', tick, room, data: event.data }, { ndjson: true })
           else output(`${tick}  ${room}  ${JSON.stringify(event.data)}`)
           mergeRoomObjects(states.get(room), event.data.objects)
           return
@@ -429,13 +442,17 @@ async function docsView(manifest, topics, options) {
       return stdout.write(markdown)
     }
   }
-  const words = topics.map(topic => topic.toLowerCase())
+  const aliases = { falloff: ['falloff', 'effect weakens', 'weakens with the distance'] }
+  const words = topics.map(topic => aliases[topic.toLowerCase()] || [topic.toLowerCase()])
   const pages = await Promise.all(manifest.pages.map(async page => ({ ...page, text: await readDocsPage(page.file) })))
   const matches = pages.map(page => {
     const haystack = `${page.command} ${page.title} ${page.text}`.toLowerCase()
-    return { ...page, score: words.filter(word => haystack.includes(word)).length }
+    return { ...page, score: words.filter(variants => variants.some(word => haystack.includes(word))).length }
   }).filter(page => page.score).sort((left, right) => right.score - left.score || left.command.localeCompare(right.command))
-  const result = matches.map(page => ({ topic: page.command, title: page.title }))
+  const best = words.length > 1 && matches.some(page => page.score === words.length)
+    ? matches.filter(page => page.score === words.length)
+    : matches
+  const result = best.map(page => ({ topic: page.command, title: page.title }))
   if (options.json) output(result, { json: true })
   else if (result.length) output(result.map(page => `${page.topic.padEnd(22)} ${page.title}`).join('\n'))
   else output(`No documentation matched "${topics.join(' ')}".`)
@@ -486,16 +503,15 @@ export async function run(program, argv) {
 
   program.command('watch [target] [position]')
     .description('stream meaningful events as plain text')
+    .usage('[options] [target] [x,y]')
     .option('-v, --verbose', 'include movement, stores, repairs, and progress')
     .option('--raw', 'emit every received room patch')
     .action(withClient(async ({ api }, target, position, options) => watchRooms(api, { target, position }, options)))
 
   const code = program.command('code [directory]')
     .description('inspect and synchronize game code')
+    .usage('[options] [directory]')
     .option('-b, --branch <name>', 'game code branch', 'default')
-    .action(withClient(async ({ api }, directory = 'bot', options) => codeDiff(api, directory, options)))
-  code.command('diff [directory]')
-    .description('compare local and deployed modules')
     .action(withClient(async ({ api }, directory = 'bot', options) => codeDiff(api, directory, options)))
   code.command('pull [directory]')
     .description('download deployed modules')
@@ -546,12 +562,7 @@ export async function run(program, argv) {
 
   const memory = program.command('memory [path]')
     .description('inspect or edit persistent Memory')
-    .action(withClient(async ({ api }, path, options) => {
-      const response = await api.userMemoryGet(path, options.shard)
-      output(response.data ?? null, options)
-    }))
-  memory.command('get [path]')
-    .description('read a Memory path')
+    .usage('[path]')
     .action(withClient(async ({ api }, path, options) => {
       const response = await api.userMemoryGet(path, options.shard)
       output(response.data ?? null, options)
@@ -567,6 +578,7 @@ export async function run(program, argv) {
 
   const market = program.command('market [resource]')
     .description('browse prices, trade, and manage orders')
+    .usage('[resource]')
     .action(withClient(async ({ api }, resource, options) => {
       if (resource) {
         const response = await api.gameMarketOrders(resource, options.shard)
@@ -577,21 +589,7 @@ export async function run(program, argv) {
       const [me, orders] = await Promise.all([api.authMe(), api.gameMarketMyOrders()])
       const result = { credits: me.money || 0, orders: orders.list || [] }
       if (options.json) output(result, { json: true })
-      else output(`Credits: ${result.credits}\n${formatMyOrders(orders)}`)
-    }))
-  market.command('orders <resource>')
-    .description('browse buy and sell orders')
-    .action(withClient(async ({ api }, resource, options) => {
-      const response = await api.gameMarketOrders(resource, options.shard)
-      if (options.json) output({ resource, orders: response.list || [], users: response.users || {} }, { json: true })
-      else output(formatMarketOrders(response, resource))
-    }))
-  market.command('mine')
-    .description('show your active orders')
-    .action(withClient(async ({ api }, options) => {
-      const response = await api.gameMarketMyOrders()
-      if (options.json) output({ orders: response.list || [] }, { json: true })
-      else output(formatMyOrders(response))
+      else output(`${displayNumber(result.credits)} credits\n${formatMyOrders(orders)}`)
     }))
   market.command('history [page]')
     .description('show your transaction history')
@@ -645,6 +643,7 @@ export async function run(program, argv) {
 
   const power = program.command('power [creep]')
     .description('inspect and develop power creeps')
+    .usage('[creep]')
     .action(withClient(async ({ api }, name, options) => powerView(api, name, options)))
   power.command('create <name>')
     .description('create an operator')
@@ -668,12 +667,13 @@ export async function run(program, argv) {
 
   const messages = program.command('messages [player]')
     .description('read conversations or message a player')
+    .usage('[@player]')
     .action(withClient(async ({ api }, player, options) => {
       const response = player ? await api.userMessagesList(playerName(player)) : await api.userMessagesIndex()
       if (options.json) output({ player: player ? playerName(player) : null, messages: response.messages || [], users: response.users || {} }, { json: true })
       else output(formatMessages(response, player ? playerName(player) : undefined))
     }))
-  messages.command('send <player> <text>')
+  messages.command('send <@player> <text>')
     .description('send a message to @player')
     .action(withClient(async ({ api }, player, text, options) => {
       const username = playerName(player)
