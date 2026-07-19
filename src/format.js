@@ -2,13 +2,13 @@ function number(value, fallback = '—') {
   return Number.isFinite(value) ? new Intl.NumberFormat('en').format(value) : fallback
 }
 
-export function formatStatus({ url, tick, user, world, rooms }) {
-  const roomNames = rooms?.rooms || []
+export function formatStatus({ server, shard, tick, player, worldStatus, rooms, attention = [] }) {
   return [
-    `${user.username} on ${url}`,
-    `Tick ${number(tick)} · ${world.status || 'unknown'}`,
-    `Rooms: ${roomNames.length ? roomNames.join(', ') : 'none'}`,
-    `CPU ${number(user.cpu)} · GCL progress ${number(user.gcl)} · Credits ${number(user.money, '0')}`
+    `${player.username} · ${worldStatus || 'unknown'}`,
+    `${server}${shard ? ` · ${shard}` : ''} · tick ${number(tick)}`,
+    `Rooms: ${rooms.length ? rooms.join(', ') : 'none'}`,
+    `CPU ${number(player.cpu)} · GCL progress ${number(player.gclProgress)} · Power ${number(player.powerProcessed, '0')} · Credits ${number(player.credits, '0')}`,
+    `Attention: ${attention.length ? attention.join(' ') : 'nothing right now'}`
   ].join('\n')
 }
 
@@ -18,12 +18,13 @@ export function formatRooms(response) {
   return rooms.join('\n')
 }
 
-export function formatMessages(response) {
+export function formatMessages(response, player) {
   const messages = response?.messages || []
   if (!messages.length) return 'No messages.'
-  return messages.map(message => {
+  return messages.map(entry => {
+    const message = entry.message || entry
     const userId = message.user || message.respondent
-    const user = message.username || response.users?.[userId]?.username || userId || 'unknown'
+    const user = message.type === 'out' ? 'you' : player || message.username || response.users?.[userId]?.username || userId || 'unknown'
     const text = message.text || message.message || ''
     return `${user}: ${text}`.trim()
   }).join('\n')

@@ -1,21 +1,19 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
-test('top-level help is semantic, brief, and hides transport internals', () => {
+test('top-level help exactly matches the interface designed in the README', async () => {
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8')
+  const block = readme.match(/```text\n\$ screeps --help\n\n([\s\S]*?)\n```/)
+  assert.ok(block)
   const result = spawnSync(process.execPath, ['bin/screeps.js', '--help'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
-  assert.match(result.stdout, /screeps status/)
-  assert.match(result.stdout, /screeps --room E4S1 room --live/)
-  assert.match(result.stdout, /--room <name>.*SCREEPS_ROOM/)
-  assert.match(result.stdout, /docs .*read the official game documentation/)
-  assert.match(result.stdout, /tile .*show everything on one tile/)
-  assert.match(result.stdout, /build .*place a construction site/)
-  assert.doesNotMatch(result.stdout, /raw <method>/)
-  assert.doesNotMatch(result.stdout, /place-spawn|construct <|messages /)
+  assert.equal(result.stdout, `${block[1]}\n`)
+  assert.doesNotMatch(result.stdout, /\b(raw|build|flag|spawn|status|rooms)\b.*\n/)
 })
 
-test('docs help lists repository-authored game guides without the API reference', () => {
+test('docs help lists every bundled guide without an API reference', () => {
   const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs', '--help'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
   assert.match(result.stdout, /cpu-limit .*How does CPU limit work/)
@@ -23,20 +21,39 @@ test('docs help lists repository-authored game guides without the API reference'
   assert.doesNotMatch(result.stdout, /^  api\s/m)
 })
 
-test('market help exposes complete actions in plain language', () => {
+test('documentation search ranks relevant partial matches', () => {
+  const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs', 'tower', 'falloff'], { encoding: 'utf8' })
+  assert.equal(result.status, 0)
+  assert.match(result.stdout, /defense .*Defending your room/)
+})
+
+test('market help exposes every action and explicit terminal context', () => {
   const result = spawnSync(process.execPath, ['bin/screeps.js', 'market', '--help'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
   for (const command of ['buy', 'sell', 'deal', 'price', 'extend', 'cancel']) {
     assert.match(result.stdout, new RegExp(`^  ${command}\\b`, 'm'))
   }
+  const deal = spawnSync(process.execPath, ['bin/screeps.js', 'market', 'deal', '--help'], { encoding: 'utf8' })
+  assert.match(deal.stdout, /--from <room>.*terminal room/)
 })
 
-test('bare command groups show help successfully and branches stay hidden', () => {
-  for (const command of [[], ['market'], ['code'], ['memory'], ['flag'], ['spawn'], ['message']]) {
-    const result = spawnSync(process.execPath, ['bin/screeps.js', ...command], { encoding: 'utf8' })
-    assert.equal(result.status, 0, command.join(' ') || 'root')
+test('command groups expose detailed help and implementation seams stay hidden', () => {
+  for (const command of ['map', 'watch', 'code', 'console', 'memory', 'market', 'power', 'messages', 'docs', 'login', 'logout']) {
+    const result = spawnSync(process.execPath, ['bin/screeps.js', command, '--help'], { encoding: 'utf8' })
+    assert.equal(result.status, 0, command)
     assert.match(result.stdout, /Usage:/)
   }
   const code = spawnSync(process.execPath, ['bin/screeps.js', 'code', '--help'], { encoding: 'utf8' })
-  assert.doesNotMatch(code.stdout, /branch/)
+  assert.match(code.stdout, /--branch <name>/)
+  assert.match(code.stdout, /^  branches\b/m)
+  assert.match(code.stdout, /^  use\b/m)
+})
+
+test('unknown targets fail before attempting a server connection', () => {
+  const result = spawnSync(process.execPath, ['bin/screeps.js', 'somewhere'], {
+    encoding: 'utf8', env: { ...process.env, SCREEPS_CLI_CONFIG: '/does/not/exist' }
+  })
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /Unknown target "somewhere"/)
+  assert.doesNotMatch(result.stderr, /No active server/)
 })

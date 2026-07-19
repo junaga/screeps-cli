@@ -46,7 +46,7 @@ Options:
   -h, --help                    show help for any command
   -V, --version                 show version and compatibility information
 
-Views are interactive in a terminal and become one-shot snapshots when piped.
+Live views stay open in a terminal; piped views print one-shot snapshots.
 --json changes their format, never their meaning. Default views are read-only.
 Actions and examples live one level down: screeps <command> --help
 

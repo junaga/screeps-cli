@@ -138,8 +138,12 @@ export function describeRoomChanges(state, patches, users = {}, options = {}) {
   const lines = []
   for (const [id, patch] of Object.entries(patches || {})) {
     const previous = state.get(id)
-    const detailed = options.verbose || options.targetId === id
+    const currentPosition = patch === null ? previous : { ...previous, ...patch }
+    const onTargetTile = options.targetPosition && [previous, currentPosition].some(object =>
+      object?.x === options.targetPosition.x && object?.y === options.targetPosition.y)
+    const detailed = options.verbose || options.targetId === id || onTargetTile
     if (options.targetId && options.targetId !== id) continue
+    if (options.targetPosition && !onTargetTile) continue
     if (patch === null) {
       if (previous) lines.push(`${objectName(previous)} disappeared from ${position(previous)}.`)
       continue

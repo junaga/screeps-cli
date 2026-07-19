@@ -107,3 +107,17 @@ test('reports routine deltas only for a verbose or explicitly watched object', (
     'creep Worker1 energy changed 10 -> 12.'
   ])
 })
+
+test('limits a tile watch to objects interacting with that position', () => {
+  const state = new Map([
+    ['near', { _id: 'near', type: 'creep', name: 'Near', x: 1, y: 1 }],
+    ['far', { _id: 'far', type: 'creep', name: 'Far', x: 10, y: 10 }]
+  ])
+  assert.deepEqual(describeRoomChanges(state, {
+    near: { x: 2 },
+    far: { x: 11 }
+  }, {}, { targetPosition: { x: 1, y: 1 } }), [
+    'creep Near moved 1,1 -> 2,1.'
+  ])
+  assert.equal(state.get('far').x, 11)
+})

@@ -4,13 +4,15 @@ import { formatMarketOrders, formatMessages, formatMyOrders, formatRooms, format
 
 test('formats status as a short player summary', () => {
   const text = formatStatus({
-    url: 'http://example.test:21025',
+    server: 'http://example.test:21025',
+    shard: 'shard0',
     tick: 1234,
-    user: { username: 'Ada', cpu: 100, gcl: 2, money: 42 },
-    world: { status: 'normal' },
-    rooms: { rooms: ['E1S1'] }
+    player: { username: 'Ada', cpu: 100, gclProgress: 2, powerProcessed: 3, credits: 42 },
+    worldStatus: 'normal',
+    rooms: ['E1S1'],
+    attention: ['1 unread message.']
   })
-  assert.equal(text, 'Ada on http://example.test:21025\nTick 1,234 · normal\nRooms: E1S1\nCPU 100 · GCL progress 2 · Credits 42')
+  assert.equal(text, 'Ada · normal\nhttp://example.test:21025 · shard0 · tick 1,234\nRooms: E1S1\nCPU 100 · GCL progress 2 · Power 3 · Credits 42\nAttention: 1 unread message.')
 })
 
 test('formats room and market empty states plainly', () => {
@@ -33,5 +35,9 @@ test('formats messages without exposing server records', () => {
   assert.equal(
     formatMessages({ messages: [{ user: '42', text: 'hello' }], users: { 42: { username: 'Ada' } } }),
     'Ada: hello'
+  )
+  assert.equal(
+    formatMessages({ messages: [{ message: { respondent: '42', type: 'out', text: 'hi' } }], users: { 42: { username: 'Ada' } } }),
+    'you: hi'
   )
 })

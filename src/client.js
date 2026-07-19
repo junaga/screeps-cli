@@ -30,6 +30,10 @@ export async function createClient(options = {}) {
 }
 
 export function output(value, options = {}) {
+  if (options.ndjson) {
+    process.stdout.write(`${JSON.stringify(value)}\n`)
+    return
+  }
   if (options.json || typeof value !== 'string') {
     process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
   } else {
