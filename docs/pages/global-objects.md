@@ -2,7 +2,7 @@
 
 ## `Game` object
 
-You operate the game through the global [`Game`](/api/#Game) object which is described in detail in the [API Reference](/api/) section. This object lets you access the complete list of your creeps, "review" rooms, pass commands, etc.
+You operate the game through the global [`Game`](https://docs.screeps.com/api/#Game) object which is described in detail in the [API Reference](https://docs.screeps.com/api/) section. This object lets you access the complete list of your creeps, "review" rooms, pass commands, etc.
 
 ```javascript
 var target = Game.spawns.Spawn1;
@@ -44,7 +44,7 @@ You should not store functions or full game objects as is in `Memory`. The `Memo
     // ...
     creep.moveTo(creep.memory.source); // ERR_INVALID_TARGET
 
-Instead of storing live objects, it is better to store the `id` property that any game object has, and then use [`Game.getObjectById`](/api/#Game.getObjectById) to retrieve the game object by its `id`:
+Instead of storing live objects, it is better to store the `id` property that any game object has, and then use [`Game.getObjectById`](https://docs.screeps.com/api/#Game.getObjectById) to retrieve the game object by its `id`:
 
     // This is correct
     var source = creep.pos.findClosestByRange(FIND_SOURCES);
@@ -55,10 +55,10 @@ Instead of storing live objects, it is better to store the `id` property that an
 
 ### Serialization
 
-The Memory object is stored in the stringified form and is parsed each time upon the first in the tick access from your script with the help of the `JSON.parse` method. The CPU cost of this method execution is counted as your script expense. If you wish, you may write your own stringifier/destringifier using the global variable [`RawMemory`](/api/#RawMemory). It stores the original memory representation as a string. In fact, the default work of the memory basically corresponds to the following code:
+The Memory object is stored in the stringified form and is parsed each time upon the first in the tick access from your script with the help of the `JSON.parse` method. The CPU cost of this method execution is counted as your script expense. If you wish, you may write your own stringifier/destringifier using the global variable [`RawMemory`](https://docs.screeps.com/api/#RawMemory). It stores the original memory representation as a string. In fact, the default work of the memory basically corresponds to the following code:
 
     Memory = JSON.parse(RawMemory.get()); //on the first access to Memory object
     // ...your script
     RawMemory.set(JSON.stringify(Memory));
 
-You can implement your own algorithm using [`RawMemory`](/api/#RawMemory) getter/setter.
+You can implement your own algorithm using [`RawMemory`](https://docs.screeps.com/api/#RawMemory) getter/setter.

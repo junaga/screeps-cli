@@ -1,6 +1,6 @@
 # Market System
 
-The market in Screeps allows to trade various resources between players by means of special structures called [Terminals](/api/#StructureTerminal). They are able to instantly transfer resources to other rooms at any distance.
+The market in Screeps allows to trade various resources between players by means of special structures called [Terminals](https://docs.screeps.com/api/#StructureTerminal). They are able to instantly transfer resources to other rooms at any distance.
 
 Trading on this market requires the in-game currency called **Credits**. Your credits are tied to your account and serve to execute your market orders.
 
@@ -8,9 +8,9 @@ In order to get your first credits, deal with someone who already has a market b
 
 ## Market orders
 
-The market system is based on **sell and buy orders** tied to your terminals. By creating an order, you designate the terminal, type, and amount of the resource to sell or buy, as well as its price for one unit in credits. Each placed order is visible to all the players in all the game world at the [Market](https://screeps.com/a/#!/market) page or via API method [`Game.market.getAllOrders`](/api/#Game.market.getAllOrders). Creating any order is subject to a 5% fee in credits.
+The market system is based on **sell and buy orders** tied to your terminals. By creating an order, you designate the terminal, type, and amount of the resource to sell or buy, as well as its price for one unit in credits. Each placed order is visible to all the players in all the game world at the [Market](https://screeps.com/a/#!/market) page or via API method [`Game.market.getAllOrders`](https://docs.screeps.com/api/#Game.market.getAllOrders). Creating any order is subject to a 5% fee in credits.
 
-To execute a trade, the second party also has to have a terminal to receive the resource (when buying from a sell order) or to send out (when selling to a buy order). You complete a trade by using the market interface or the method [`Game.market.deal`](/api/#Game.market.deal) and designating the other player's order, your terminal, and the amount of resources wanted. Then the two terminals automatically carry out the transaction, the buyer's account is charged with the corresponding amount of credits, and this amount is passed to the seller.
+To execute a trade, the second party also has to have a terminal to receive the resource (when buying from a sell order) or to send out (when selling to a buy order). You complete a trade by using the market interface or the method [`Game.market.deal`](https://docs.screeps.com/api/#Game.market.deal) and designating the other player's order, your terminal, and the amount of resources wanted. Then the two terminals automatically carry out the transaction, the buyer's account is charged with the corresponding amount of credits, and this amount is passed to the seller.
 
 The energy expenses to transfer resources from one terminal to another are always on the party who executes the deal rather than the order's owner, even in the case of buying a resource upon a sell order. The same is true for terminal cooldown.
 
@@ -32,4 +32,4 @@ This story results in the following balance shift between the players involved:
 
 ## NPC Terminals
 
-All the “highway crossroads” between sectors (i.e. in the rooms W0N0, W10N0, W10N10, etc.) contain neutral NPC Terminals. You can trade with these terminals the same way as with real players using the market interface or the object [`Game.market`](/api/#Game.market). The orders in NPC terminals have limited resources amounts and get replenished according to a set of rules. Although they don’t boast the most competitive prices, they allow you to convert your resource surplus into credits, and vice versa.
+All the “highway crossroads” between sectors (i.e. in the rooms W0N0, W10N0, W10N10, etc.) contain neutral NPC Terminals. You can trade with these terminals the same way as with real players using the market interface or the object [`Game.market`](https://docs.screeps.com/api/#Game.market). The orders in NPC terminals have limited resources amounts and get replenished according to a set of rules. Although they don’t boast the most competitive prices, they allow you to convert your resource surplus into credits, and vice versa.

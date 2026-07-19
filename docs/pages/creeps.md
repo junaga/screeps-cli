@@ -2,13 +2,13 @@
 
 You build (spawn) units called **creeps** the same way as in other strategy games, but with one exception: you construct the "body" of a new creep out of 7 available **body part types**, the resulting body being a sequence up to 50 parts. It allows thousands of creep types and their roles: ordinary workers, huge construction machines able to build or repair a structure within a few cycles, weaselly couriers, heavy capacious trucks, fast and cheap scouts, well-equipped fighters with regeneration ability, etc. It may even be creeps resembling towers or fortresses for mining, defending, or seizing, with very little speed (couple of tiles per minute), but monstrous characteristics. Everything is up to you, your tactics and imagination.
 
-![](img/bodyparts.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/bodyparts.png)
 
 However, remember that any creep has a life cycle of 1500 game ticks (approx. 30-60 minutes depending on the tick duration). Then it "ages" and dies. So you not only need to control existing creeps but set up manufacturing and automatic control of superseding generations of your creeps as well.
 
 A standard spawn (structure) can only spawn regular creeps with the total cost of up to **300 energy units**. Spawning more expensive creeps requires a **spawn extension** in the room. Each extension can contain up to **50 extra energy units** that may be spent on creation of a creep. The exact location of extensions within a room does not matter, but they should be in the same room with the spawn (one extension can be used by several spawns). All the necessary energy should be in the spawn and extensions in the beginning of the creep creation.
 
-The amount of extensions available for construction depends on the Room Controller in the room. Read more in [Global control](/control.html).
+The amount of extensions available for construction depends on the Room Controller in the room. Read more in [Global control](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/control.md).
 
 ## Creeps Skills
 

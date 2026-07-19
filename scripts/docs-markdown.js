@@ -1,3 +1,5 @@
+import { dirname, join, normalize } from 'node:path/posix'
+
 function attribute(attributes, name) {
   const match = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i').exec(attributes)
   return match?.[1] ?? match?.[2] ?? match?.[3]
@@ -134,4 +136,36 @@ export function transcodeHtmlTables(markdown) {
     .replace(/<style\b[^>]*>[^]*?<\/style>/gi, '')
     .replace(/<table\b[^>]*>[^]*?<\/table>/gi, tableMarkdown)
     .replace(/\n{3,}/g, '\n\n')
+}
+
+function immutableTarget(target, options, media = false) {
+  if (/^[a-z][a-z\d+.-]*:/i.test(target)) return target
+  if (target.startsWith('//')) return `https:${target}`
+  if (target.startsWith('/api')) return `${options.site.replace(/\/$/, '')}${target}`
+
+  const suffixAt = target.search(/[?#]/)
+  const path = suffixAt < 0 ? target : target.slice(0, suffixAt)
+  const suffix = suffixAt < 0 ? '' : target.slice(suffixAt)
+  const sourcePath = path
+    ? normalize(path.startsWith('/') ? path.slice(1) : join(dirname(options.source), path))
+    : options.source
+  const repositoryPath = sourcePath.replace(/\.html$/i, '.md')
+  const repositorySuffix = repositoryPath.endsWith('.md') && suffix.startsWith('#') ? suffix.toLowerCase() : suffix
+  const repository = options.repository.replace(/\.git$/, '').replace(/\/$/, '')
+  const githubPath = repository.replace(/^https:\/\/github\.com\//, '')
+  const base = media
+    ? `https://raw.githubusercontent.com/${githubPath}/${options.revision}/source/`
+    : `${repository}/blob/${options.revision}/source/`
+  return `${base}${repositoryPath}${repositorySuffix}`
+}
+
+export function absolutizeDocsLinks(markdown, options) {
+  const linked = markdown.replace(/(!?\[[^\]]*\]\()([^)]+)(\))/g, (match, opening, target, closing) => {
+    const media = opening.startsWith('!')
+    return `${opening}${immutableTarget(target, options, media)}${closing}`
+  })
+  return linked.replace(/<(?:a|img|source)\b[^>]*>/gi, tag => tag.replace(
+    /(\b(?:href|src)\s*=\s*["'])([^"']+)(["'])/gi,
+    (attribute, opening, target, closing) => `${opening}${immutableTarget(target, options, /\bsrc\s*=/i.test(opening))}${closing}`
+  ))
 }

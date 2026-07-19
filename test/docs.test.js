@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import packageInfo from '../package.json' with { type: 'json' }
-import { compileDocsPattern, readDocsManifest, readDocsPage, searchMarkdown } from '../src/docs.js'
+import { readDocsManifest, readDocsPage } from '../src/docs.js'
 import { CLI_VERSION, DOCS_BUILT_AT, DOCS_REVISION, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
 
 test('pins distinct CLI, game protocol, and official docs versions', async () => {
@@ -28,6 +28,12 @@ test('bundles clean authored guide pages without the generated API reference', a
     assert.ok(markdown.startsWith(`# ${page.title}\n\n`), page.command)
     assert.doesNotMatch(markdown, /\{%|^title:/m, page.command)
     assert.doesNotMatch(markdown, /<\/?(?:table|thead|tbody|tfoot|tr|th|td)\b/i, page.command)
+    for (const match of markdown.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)) {
+      assert.match(match[1], /^[a-z][a-z\d+.-]*:/i, `${page.command}: ${match[1]}`)
+    }
+    for (const match of markdown.matchAll(/<(?:a|img|source)\b[^>]*\b(?:href|src)=["']([^"']+)/gi)) {
+      assert.match(match[1], /^[a-z][a-z\d+.-]*:/i, `${page.command}: ${match[1]}`)
+    }
   }
 })
 
@@ -36,46 +42,6 @@ test('docs command prints its bundled Markdown page exactly', async () => {
   const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs', 'cpu-limit'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
   assert.equal(result.stdout, expected)
-})
-
-test('documentation search keeps heading context and only matching paragraphs', () => {
-  const markdown = [
-    '# Guide',
-    '',
-    'Unrelated introduction.',
-    '',
-    '## Alpha',
-    '',
-    'A matching needle.',
-    '',
-    'An unrelated paragraph.',
-    '',
-    '## Beta',
-    '',
-    'Another needle.'
-  ].join('\n')
-  assert.equal(searchMarkdown(markdown, compileDocsPattern('needle')), [
-    '# Guide',
-    '',
-    '## Alpha',
-    '',
-    'A matching needle.',
-    '',
-    '## Beta',
-    '',
-    'Another needle.',
-    ''
-  ].join('\n'))
-  assert.equal(searchMarkdown(markdown, compileDocsPattern('^## alpha$')), [
-    '# Guide',
-    '',
-    '## Alpha',
-    '',
-    'A matching needle.',
-    '',
-    'An unrelated paragraph.',
-    ''
-  ].join('\n'))
 })
 
 test('version reports CLI, game protocol, and dated docs revision', () => {

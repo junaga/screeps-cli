@@ -6,8 +6,8 @@ All resource kinds have different purposes, and you start playing only with acce
 
 ## Energy
 
-**Where to get:** a [`Source`](/api/#Source) in almost any room. <br>
-**How to get:** send a creep with a `WORK` part and [`harvest`](/api/#Creep.harvest) it. <br>
+**Where to get:** a [`Source`](https://docs.screeps.com/api/#Source) in almost any room. <br>
+**How to get:** send a creep with a `WORK` part and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it. <br>
 **Needed for:** spawning creeps, building structures.
 
 Energy is the main construction material in the Screeps world. Your base works on energy, so harvesting plenty of it is vital for any colony.
@@ -15,8 +15,8 @@ You can harvest energy not only in your home room, but also in other rooms remot
 
 ## Minerals
 
-**Where to get:** a [`Mineral`](/api/#Mineral) in almost any room. <br>
-**How to get:** build a [`StructureExtractor`](/api/#StructureExtractor), send a creep with a `WORK` part, and [`harvest`](/api/#Creep.harvest) it. <br>
+**Where to get:** a [`Mineral`](https://docs.screeps.com/api/#Mineral) in almost any room. <br>
+**How to get:** build a [`StructureExtractor`](https://docs.screeps.com/api/#StructureExtractor), send a creep with a `WORK` part, and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it. <br>
 **Needed for:** boosting creeps' capabilities, and also for producing trade commodities.
 
 By mining and processing minerals, you can significantly speed up your economy and boost the effectiveness of your creeps.
@@ -27,21 +27,21 @@ Working with minerals consists of 3 steps:
 
 There are 7 types of base minerals shown in the picture below.
 
-![](img/minerals-01.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/minerals-01.png)
 
 Each room contains only one mineral type, so in order to handle them effectively you need either access to several suitable rooms or trade relationships with other players.
 
-<img src="img/mining_minerals.png" align="right">A mineral deposit is located in a room at a spot marked by a special symbol. To start mining the deposit, you need to construct the special structure [**Extractor**](/api/#StructureExtractor) on top of it (available at Room Controller Level 6). Upon building it, you can start applying the method [`harvest`](/api/#Creep.harvest) to the deposit thus mining the corresponding mineral in the same way you harvest energy.
+<img src="https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/mining_minerals.png" align="right">A mineral deposit is located in a room at a spot marked by a special symbol. To start mining the deposit, you need to construct the special structure [**Extractor**](https://docs.screeps.com/api/#StructureExtractor) on top of it (available at Room Controller Level 6). Upon building it, you can start applying the method [`harvest`](https://docs.screeps.com/api/#Creep.harvest) to the deposit thus mining the corresponding mineral in the same way you harvest energy.
 
 ### Mineral compounds
 
-Base minerals are useless on their own. In order to impart some useful capabilities to them, you have to combine them according to special formulas in the structure called [**Lab**](/api/#StructureLab).
+Base minerals are useless on their own. In order to impart some useful capabilities to them, you have to combine them according to special formulas in the structure called [**Lab**](https://docs.screeps.com/api/#StructureLab).
 
-![](img/minerals-02.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/minerals-02.png)
 
 One reaction requires three labs: two as reagent sources, and the third one as the produce collector. The labs should be within the range of 2 squares from each other. One lab cannot contain more than one mineral type at the same time.
 
-<img src="img/2016-03-09_10-32-33.gif" align="right">
+<img src="https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/2016-03-09_10-32-33.gif" align="right">
 
     var labs = room.find(FIND_MY_STRUCTURES,
         {filter: {structureType: STRUCTURE_LAB}});
@@ -58,7 +58,7 @@ One reaction requires three labs: two as reagent sources, and the third one as t
 
 Apart from running chemical reactions with minerals, a lab can use resulting compounds to permanently upgrade your creeps boosting their specific properties.
 
-Each compound is applied to one body part of the creep of a certain type using the [`StructureLab.boostCreep`](/api/#StructureLab.boostCreep) method according to the table below and boosts the effectiveness of one of the actions of this creep. The boosted part works as two, three, or even four corresponding parts. To boost the whole creep, you need to boost all its parts of the given type.
+Each compound is applied to one body part of the creep of a certain type using the [`StructureLab.boostCreep`](https://docs.screeps.com/api/#StructureLab.boostCreep) method according to the table below and boosts the effectiveness of one of the actions of this creep. The boosted part works as two, three, or even four corresponding parts. To boost the whole creep, you need to boost all its parts of the given type.
 
 Boosting one body part takes 30 mineral compound units and 20 energy units. One body part can be boosted only with one compound type.
 
@@ -67,48 +67,48 @@ Boosting one body part takes 30 mineral compound units and 20 energy units. One 
 | Name | Formula | Time | Body part | Effect |
 | --- | --- | --- | --- | --- |
 | **Base compounds** |  |  |  |  |
-| ![](//static.screeps.com/upload/mineral-icons/OH.png) hydroxide | ![](//static.screeps.com/upload/mineral-icons/H.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 20 | — | — |
-| ![](//static.screeps.com/upload/mineral-icons/ZK.png) zynthium keanite | ![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/K.png) | 5 | — | — |
-| ![](//static.screeps.com/upload/mineral-icons/UL.png) utrium lemergite | ![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/L.png) | 5 | — | — |
-| ![](//static.screeps.com/upload/mineral-icons/G.png) ghodium | ![](//static.screeps.com/upload/mineral-icons/ZK.png) + ![](//static.screeps.com/upload/mineral-icons/UL.png) | 5 | — | — |
+| ![](https://static.screeps.com/upload/mineral-icons/OH.png) hydroxide | ![](https://static.screeps.com/upload/mineral-icons/H.png) + ![](https://static.screeps.com/upload/mineral-icons/O.png) | 20 | — | — |
+| ![](https://static.screeps.com/upload/mineral-icons/ZK.png) zynthium keanite | ![](https://static.screeps.com/upload/mineral-icons/Z.png) + ![](https://static.screeps.com/upload/mineral-icons/K.png) | 5 | — | — |
+| ![](https://static.screeps.com/upload/mineral-icons/UL.png) utrium lemergite | ![](https://static.screeps.com/upload/mineral-icons/U.png) + ![](https://static.screeps.com/upload/mineral-icons/L.png) | 5 | — | — |
+| ![](https://static.screeps.com/upload/mineral-icons/G.png) ghodium | ![](https://static.screeps.com/upload/mineral-icons/ZK.png) + ![](https://static.screeps.com/upload/mineral-icons/UL.png) | 5 | — | — |
 | **Tier 1 compounds** |  |  |  |  |
-| ![](//static.screeps.com/upload/mineral-icons/UH.png) utrium hydride | ![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 10 | `ATTACK` | +100% `attack` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/UO.png) utrium oxide | ![](//static.screeps.com/upload/mineral-icons/U.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `WORK` | +200% `harvest` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/KH.png) keanium hydride | ![](//static.screeps.com/upload/mineral-icons/K.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 10 | `CARRY` | +50 capacity |
-| ![](//static.screeps.com/upload/mineral-icons/KO.png) keanium oxide | ![](//static.screeps.com/upload/mineral-icons/K.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `RANGED_ATTACK` | +100% `rangedAttack` and `rangedMassAttack` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/LH.png) lemergium hydride | ![](//static.screeps.com/upload/mineral-icons/L.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 15 | `WORK` | +50% `repair` and `build` effectiveness without increasing the energy cost |
-| ![](//static.screeps.com/upload/mineral-icons/LO.png) lemergium oxide | ![](//static.screeps.com/upload/mineral-icons/L.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `HEAL` | +100% `heal` and `rangedHeal` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/ZH.png) zynthium hydride | ![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 20 | `WORK` | +100% `dismantle` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/ZO.png) zynthium oxide | ![](//static.screeps.com/upload/mineral-icons/Z.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `MOVE` | +100% fatigue decrease speed |
-| ![](//static.screeps.com/upload/mineral-icons/GH.png) ghodium hydride | ![](//static.screeps.com/upload/mineral-icons/G.png) + ![](//static.screeps.com/upload/mineral-icons/H.png) | 10 | `WORK` | +50% `upgradeController` effectiveness without increasing the energy cost |
-| ![](//static.screeps.com/upload/mineral-icons/GO.png) ghodium oxide | ![](//static.screeps.com/upload/mineral-icons/G.png) + ![](//static.screeps.com/upload/mineral-icons/O.png) | 10 | `TOUGH` | -30% damage taken |
+| ![](https://static.screeps.com/upload/mineral-icons/UH.png) utrium hydride | ![](https://static.screeps.com/upload/mineral-icons/U.png) + ![](https://static.screeps.com/upload/mineral-icons/H.png) | 10 | `ATTACK` | +100% `attack` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/UO.png) utrium oxide | ![](https://static.screeps.com/upload/mineral-icons/U.png) + ![](https://static.screeps.com/upload/mineral-icons/O.png) | 10 | `WORK` | +200% `harvest` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/KH.png) keanium hydride | ![](https://static.screeps.com/upload/mineral-icons/K.png) + ![](https://static.screeps.com/upload/mineral-icons/H.png) | 10 | `CARRY` | +50 capacity |
+| ![](https://static.screeps.com/upload/mineral-icons/KO.png) keanium oxide | ![](https://static.screeps.com/upload/mineral-icons/K.png) + ![](https://static.screeps.com/upload/mineral-icons/O.png) | 10 | `RANGED_ATTACK` | +100% `rangedAttack` and `rangedMassAttack` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/LH.png) lemergium hydride | ![](https://static.screeps.com/upload/mineral-icons/L.png) + ![](https://static.screeps.com/upload/mineral-icons/H.png) | 15 | `WORK` | +50% `repair` and `build` effectiveness without increasing the energy cost |
+| ![](https://static.screeps.com/upload/mineral-icons/LO.png) lemergium oxide | ![](https://static.screeps.com/upload/mineral-icons/L.png) + ![](https://static.screeps.com/upload/mineral-icons/O.png) | 10 | `HEAL` | +100% `heal` and `rangedHeal` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/ZH.png) zynthium hydride | ![](https://static.screeps.com/upload/mineral-icons/Z.png) + ![](https://static.screeps.com/upload/mineral-icons/H.png) | 20 | `WORK` | +100% `dismantle` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/ZO.png) zynthium oxide | ![](https://static.screeps.com/upload/mineral-icons/Z.png) + ![](https://static.screeps.com/upload/mineral-icons/O.png) | 10 | `MOVE` | +100% fatigue decrease speed |
+| ![](https://static.screeps.com/upload/mineral-icons/GH.png) ghodium hydride | ![](https://static.screeps.com/upload/mineral-icons/G.png) + ![](https://static.screeps.com/upload/mineral-icons/H.png) | 10 | `WORK` | +50% `upgradeController` effectiveness without increasing the energy cost |
+| ![](https://static.screeps.com/upload/mineral-icons/GO.png) ghodium oxide | ![](https://static.screeps.com/upload/mineral-icons/G.png) + ![](https://static.screeps.com/upload/mineral-icons/O.png) | 10 | `TOUGH` | -30% damage taken |
 | **Tier 2 compounds** |  |  |  |  |
-| ![](//static.screeps.com/upload/mineral-icons/UH2O.png) utrium acid | ![](//static.screeps.com/upload/mineral-icons/UH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `ATTACK` | +200% `attack` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/UHO2.png) utrium alkalide | ![](//static.screeps.com/upload/mineral-icons/UO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `WORK` | +400% `harvest` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/KH2O.png) keanium acid | ![](//static.screeps.com/upload/mineral-icons/KH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `CARRY` | +100 capacity |
-| ![](//static.screeps.com/upload/mineral-icons/KHO2.png) keanium alkalide | ![](//static.screeps.com/upload/mineral-icons/KO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `RANGED_ATTACK` | +200% `rangedAttack` and `rangedMassAttack` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/LH2O.png) lemergium acid | ![](//static.screeps.com/upload/mineral-icons/LH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 10 | `WORK` | +80% `repair` and `build` effectiveness without increasing the energy cost |
-| ![](//static.screeps.com/upload/mineral-icons/LHO2.png) lemergium alkalide | ![](//static.screeps.com/upload/mineral-icons/LO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `HEAL` | +200% `heal` and `rangedHeal` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/ZH2O.png) zynthium acid | ![](//static.screeps.com/upload/mineral-icons/ZH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 40 | `WORK` | +200% `dismantle` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/ZHO2.png) zynthium alkalide | ![](//static.screeps.com/upload/mineral-icons/ZO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 5 | `MOVE` | +200% fatigue decrease speed |
-| ![](//static.screeps.com/upload/mineral-icons/GH2O.png) ghodium acid | ![](//static.screeps.com/upload/mineral-icons/GH.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 15 | `WORK` | +80% `upgradeController` effectiveness without increasing the energy cost |
-| ![](//static.screeps.com/upload/mineral-icons/GHO2.png) ghodium alkalide | ![](//static.screeps.com/upload/mineral-icons/GO.png) + ![](//static.screeps.com/upload/mineral-icons/OH.png) | 30 | `TOUGH` | -50% damage taken |
+| ![](https://static.screeps.com/upload/mineral-icons/UH2O.png) utrium acid | ![](https://static.screeps.com/upload/mineral-icons/UH.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 5 | `ATTACK` | +200% `attack` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/UHO2.png) utrium alkalide | ![](https://static.screeps.com/upload/mineral-icons/UO.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 5 | `WORK` | +400% `harvest` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/KH2O.png) keanium acid | ![](https://static.screeps.com/upload/mineral-icons/KH.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 5 | `CARRY` | +100 capacity |
+| ![](https://static.screeps.com/upload/mineral-icons/KHO2.png) keanium alkalide | ![](https://static.screeps.com/upload/mineral-icons/KO.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 5 | `RANGED_ATTACK` | +200% `rangedAttack` and `rangedMassAttack` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/LH2O.png) lemergium acid | ![](https://static.screeps.com/upload/mineral-icons/LH.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 10 | `WORK` | +80% `repair` and `build` effectiveness without increasing the energy cost |
+| ![](https://static.screeps.com/upload/mineral-icons/LHO2.png) lemergium alkalide | ![](https://static.screeps.com/upload/mineral-icons/LO.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 5 | `HEAL` | +200% `heal` and `rangedHeal` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/ZH2O.png) zynthium acid | ![](https://static.screeps.com/upload/mineral-icons/ZH.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 40 | `WORK` | +200% `dismantle` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/ZHO2.png) zynthium alkalide | ![](https://static.screeps.com/upload/mineral-icons/ZO.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 5 | `MOVE` | +200% fatigue decrease speed |
+| ![](https://static.screeps.com/upload/mineral-icons/GH2O.png) ghodium acid | ![](https://static.screeps.com/upload/mineral-icons/GH.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 15 | `WORK` | +80% `upgradeController` effectiveness without increasing the energy cost |
+| ![](https://static.screeps.com/upload/mineral-icons/GHO2.png) ghodium alkalide | ![](https://static.screeps.com/upload/mineral-icons/GO.png) + ![](https://static.screeps.com/upload/mineral-icons/OH.png) | 30 | `TOUGH` | -50% damage taken |
 | **Tier 3 compounds** |  |  |  |  |
-| ![](//static.screeps.com/upload/mineral-icons/XUH2O.png) catalyzed utrium acid | ![](//static.screeps.com/upload/mineral-icons/UH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `ATTACK` | +300% `attack` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/XUHO2.png) catalyzed utrium alkalide | ![](//static.screeps.com/upload/mineral-icons/UHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `WORK` | +600% `harvest` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/XKH2O.png) catalyzed keanium acid | ![](//static.screeps.com/upload/mineral-icons/KH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `CARRY` | +150 capacity |
-| ![](//static.screeps.com/upload/mineral-icons/XKHO2.png) catalyzed keanium alkalide | ![](//static.screeps.com/upload/mineral-icons/KHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `RANGED_ATTACK` | +300% `rangedAttack` and `rangedMassAttack` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/XLH2O.png) catalyzed lemergium acid | ![](//static.screeps.com/upload/mineral-icons/LH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 65 | `WORK` | +100% `repair` and `build` effectiveness without increasing the energy cost |
-| ![](//static.screeps.com/upload/mineral-icons/XLHO2.png) catalyzed lemergium alkalide | ![](//static.screeps.com/upload/mineral-icons/LHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `HEAL` | +300% `heal` and `rangedHeal` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/XZH2O.png) catalyzed zynthium acid | ![](//static.screeps.com/upload/mineral-icons/ZH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 160 | `WORK` | +300% `dismantle` effectiveness |
-| ![](//static.screeps.com/upload/mineral-icons/XZHO2.png) catalyzed zynthium alkalide | ![](//static.screeps.com/upload/mineral-icons/ZHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 60 | `MOVE` | +300% fatigue decrease speed |
-| ![](//static.screeps.com/upload/mineral-icons/XGH2O.png) catalyzed ghodium acid | ![](//static.screeps.com/upload/mineral-icons/GH2O.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 80 | `WORK` | +100% `upgradeController` effectiveness without increasing the energy cost |
-| ![](//static.screeps.com/upload/mineral-icons/XGHO2.png) catalyzed ghodium alkalide | ![](//static.screeps.com/upload/mineral-icons/GHO2.png) + ![](//static.screeps.com/upload/mineral-icons/X.png) | 150 | `TOUGH` | -70% damage taken |
+| ![](https://static.screeps.com/upload/mineral-icons/XUH2O.png) catalyzed utrium acid | ![](https://static.screeps.com/upload/mineral-icons/UH2O.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 60 | `ATTACK` | +300% `attack` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/XUHO2.png) catalyzed utrium alkalide | ![](https://static.screeps.com/upload/mineral-icons/UHO2.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 60 | `WORK` | +600% `harvest` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/XKH2O.png) catalyzed keanium acid | ![](https://static.screeps.com/upload/mineral-icons/KH2O.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 60 | `CARRY` | +150 capacity |
+| ![](https://static.screeps.com/upload/mineral-icons/XKHO2.png) catalyzed keanium alkalide | ![](https://static.screeps.com/upload/mineral-icons/KHO2.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 60 | `RANGED_ATTACK` | +300% `rangedAttack` and `rangedMassAttack` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/XLH2O.png) catalyzed lemergium acid | ![](https://static.screeps.com/upload/mineral-icons/LH2O.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 65 | `WORK` | +100% `repair` and `build` effectiveness without increasing the energy cost |
+| ![](https://static.screeps.com/upload/mineral-icons/XLHO2.png) catalyzed lemergium alkalide | ![](https://static.screeps.com/upload/mineral-icons/LHO2.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 60 | `HEAL` | +300% `heal` and `rangedHeal` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/XZH2O.png) catalyzed zynthium acid | ![](https://static.screeps.com/upload/mineral-icons/ZH2O.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 160 | `WORK` | +300% `dismantle` effectiveness |
+| ![](https://static.screeps.com/upload/mineral-icons/XZHO2.png) catalyzed zynthium alkalide | ![](https://static.screeps.com/upload/mineral-icons/ZHO2.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 60 | `MOVE` | +300% fatigue decrease speed |
+| ![](https://static.screeps.com/upload/mineral-icons/XGH2O.png) catalyzed ghodium acid | ![](https://static.screeps.com/upload/mineral-icons/GH2O.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 80 | `WORK` | +100% `upgradeController` effectiveness without increasing the energy cost |
+| ![](https://static.screeps.com/upload/mineral-icons/XGHO2.png) catalyzed ghodium alkalide | ![](https://static.screeps.com/upload/mineral-icons/GHO2.png) + ![](https://static.screeps.com/upload/mineral-icons/X.png) | 150 | `TOUGH` | -70% damage taken |
 
 ## Commodities
 
-**Where to get:** a [`Deposit`](/api/#Deposit) in "highway" rooms. <br>
-**How to get:** send a creep with a `WORK` part and [`harvest`](/api/#Creep.harvest) it. <br>
+**Where to get:** a [`Deposit`](https://docs.screeps.com/api/#Deposit) in "highway" rooms. <br>
+**How to get:** send a creep with a `WORK` part and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it. <br>
 **Needed for:** producing trade commodities and earning credits.
 
 Trade commodities are resources that NPC market traders are most interested in. These resources have no other purpose
@@ -116,11 +116,11 @@ other than to be sold and generate credits. Producing high-level commodities is 
 
 ### Harvesting
 
-You harvest raw commodities from a [`Deposit`](/api/#Deposit) in "highway" rooms that divide living sectors on the map.
+You harvest raw commodities from a [`Deposit`](https://docs.screeps.com/api/#Deposit) in "highway" rooms that divide living sectors on the map.
 There are 4 types of raw resources: Metal, Silicon, Biomass, Mist.
 They are distributed unevenly across the world map: one resource type per map quadrant (NW, NE, SW, SE).
 
-![](img/commodities.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities.png)
 
 Unlike minerals, these deposits exhaust as you harvest them: the more you harvest, the longer cooldown becomes.
 They vanish when you stop harvesting it after some time, and reappear elsewhere nearby.
@@ -129,50 +129,50 @@ Also, a new deposit will appear in the sector if all other deposits are exhauste
 ### Basic commodities
 
 Selling raw resources may be not very profitable.
-This is why it's a better idea to build a [**Factory**](/api/#StructureFactory) (available at RCL 7) in order to [`produce`](/api/#StructureFactory.produce) more complex commodities.
+This is why it's a better idea to build a [**Factory**](https://docs.screeps.com/api/#StructureFactory) (available at RCL 7) in order to [`produce`](https://docs.screeps.com/api/#StructureFactory.produce) more complex commodities.
 
 A newly built factory has no level which means it can produce just a few basic commodities out of all kinds of existing resources ("any level" tier in the tables below).
 They also can be used to store resources in a "compressed" form.
 
 #### Compressing commodities
 
-![](img/commodities1.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities1.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
-| Utrium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/U.png) Utrium × *500*; Energy × *200* | 20 ticks |
-| Lemergium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/L.png) Lemergium × *500*; Energy × *200* | 20 ticks |
-| Zynthium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/Z.png) Zynthium × *500*; Energy × *200* | 20 ticks |
-| Keanium bar × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/K.png) Keanium × *500*; Energy × *200* | 20 ticks |
-| Ghodium melt × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/G.png) Ghodium × *500*; Energy × *200* | 20 ticks |
-| Oxidant × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/O.png) Oxygen × *500*; Energy × *200* | 20 ticks |
-| Reductant × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/H.png) Hydrogen × *500*; Energy × *200* | 20 ticks |
-| Purifier × *100* | Any level | ![](//static.screeps.com/upload/mineral-icons/X.png) Catalyst × *500*; Energy × *200* | 20 ticks |
+| Utrium bar × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/U.png) Utrium × *500*; Energy × *200* | 20 ticks |
+| Lemergium bar × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/L.png) Lemergium × *500*; Energy × *200* | 20 ticks |
+| Zynthium bar × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/Z.png) Zynthium × *500*; Energy × *200* | 20 ticks |
+| Keanium bar × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/K.png) Keanium × *500*; Energy × *200* | 20 ticks |
+| Ghodium melt × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/G.png) Ghodium × *500*; Energy × *200* | 20 ticks |
+| Oxidant × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/O.png) Oxygen × *500*; Energy × *200* | 20 ticks |
+| Reductant × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/H.png) Hydrogen × *500*; Energy × *200* | 20 ticks |
+| Purifier × *100* | Any level | ![](https://static.screeps.com/upload/mineral-icons/X.png) Catalyst × *500*; Energy × *200* | 20 ticks |
 | Battery × *50* | Any level | Energy × *600* | 10 ticks |
 
  You can decompress to recover raw resources when you need them.
 
 #### Decompressing commodities
 
-![](img/commodities2.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities2.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
-| ![](//static.screeps.com/upload/mineral-icons/U.png) Utrium × *500* | Any level | Utrium bar × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/L.png) Lemergium × *500* | Any level | Lemergium bar × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/Z.png) Zynthium × *500* | Any level | Zynthium bar × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/K.png) Keanium × *500* | Any level | Keanium bar × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/G.png) Ghodium × *500* | Any level | Ghodium melt × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/O.png) Oxygen × *500* | Any level | Oxidant × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/H.png) Hydrogen × *500* | Any level | Reductant × *100*; Energy × *200* | 20 ticks |
-| ![](//static.screeps.com/upload/mineral-icons/X.png) Catalyst × *500* | Any level | Purifier × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/U.png) Utrium × *500* | Any level | Utrium bar × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/L.png) Lemergium × *500* | Any level | Lemergium bar × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/Z.png) Zynthium × *500* | Any level | Zynthium bar × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/K.png) Keanium × *500* | Any level | Keanium bar × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/G.png) Ghodium × *500* | Any level | Ghodium melt × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/O.png) Oxygen × *500* | Any level | Oxidant × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/H.png) Hydrogen × *500* | Any level | Reductant × *100*; Energy × *200* | 20 ticks |
+| ![](https://static.screeps.com/upload/mineral-icons/X.png) Catalyst × *500* | Any level | Purifier × *100*; Energy × *200* | 20 ticks |
 | Energy × *500* | Any level | Battery × *50* | 10 ticks |
 
  When you gain access to regional deposit resources, you can start producing additional basic commodities from them.
 
 #### Basic regional commodities
 
-![](img/commodities3.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities3.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -185,7 +185,7 @@ All commodities above can be produced in a factory of any level.
 
 ### Higher commodities
 
-The full use of factories is possible with [Operators](power.html#Power-Creeps) only, and their `OPERATE_FACTORY` power.
+The full use of factories is possible with [Operators](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/power.md#power-creeps) only, and their `OPERATE_FACTORY` power.
 When an Operator uses this power on a factory without a level, the level of the factory is permanently set to the level of the power, and the same effect is applied on the factory.
 It enables the factory to produce commodities of the corresponding level.
 The factory can only produce commodities of exactly the same level, or "any level" commodities.
@@ -200,7 +200,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Common higher commodities
 
-![](img/commodities4.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities4.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -210,7 +210,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Mechanical chain
 
-![](img/commodities5.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities5.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -222,7 +222,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Biological chain
 
-![](img/commodities6.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities6.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -234,7 +234,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Electronical chain
 
-![](img/commodities7.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities7.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -246,7 +246,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Mystical chain
 
-![](img/commodities8.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities8.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -258,8 +258,8 @@ These commodities have the most lucrative prices on the market.
 
 ## Power
 
-**Where to get:** a [`StructurePowerBank`](/api/#StructurePowerBank) in "highway" rooms. <br>
+**Where to get:** a [`StructurePowerBank`](https://docs.screeps.com/api/#StructurePowerBank) in "highway" rooms. <br>
 **How to get:** destroy the structure and loot the dropped resource. <br>
 **Needed for:** creating Power Creeps.
 
-See this article for more info: [Power](power.html).
+See this article for more info: [Power](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/power.md).

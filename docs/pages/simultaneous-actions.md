@@ -2,7 +2,7 @@
 
 The exact methods available to a creep are determined by its parts. You may opt to create an all-in-one creep out of all existing parts, but you won't be able to execute all methods simultaneously. Here are the dependencies:
 
-![](img/action-priorities.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/action-priorities.png)
 
 If you try to execute all the dependent methods within one tick, **only the most right one will be executed**. Each attempt means a correct execution returning the `OK` result. For example:
 
@@ -44,4 +44,4 @@ The creep will move to the left in this tick.
 
 1.  Though healing healthy creeps and repairing undamaged building may be senseless, it returns `OK` and blocks more left methods in its pipeline.
 2.  While `transfer` may work along with `drop`, you cannot execute `transfer` two and more times per tick (to transfer energy to multiple objects). The same is true for all similar methods.
-3.  Simultaneously executed methods using `CARRY` body part don't affect each other. Each of them has the amount of energy available in the beginning of the tick. See more about this in [Understanding game loop, time and ticks](/game-loop.html).
+3.  Simultaneously executed methods using `CARRY` body part don't affect each other. Each of them has the amount of energy available in the beginning of the tick. See more about this in [Understanding game loop, time and ticks](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/game-loop.md).

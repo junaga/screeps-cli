@@ -4,7 +4,7 @@ Screeps is not only a MMO game with the officially maintained open world, but al
 
 We like such community activity, this is why we display public quality servers on the game login screen in the Community Servers list.
 
-![](img/community-servers.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/community-servers.png)
 
 If you want your server to be included to this list, send an email to [contact@screeps.com](mailto:contact@screeps.com). Your server has to comply with the following rules:
 

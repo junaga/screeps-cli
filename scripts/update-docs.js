@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { basename, extname, join, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { DOCS_REPOSITORY, DOCS_REVISION, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
-import { transcodeHtmlTables } from './docs-markdown.js'
+import { absolutizeDocsLinks, transcodeHtmlTables } from './docs-markdown.js'
 
 const run = promisify(execFile)
 const destination = new URL('../docs/', import.meta.url)
@@ -44,8 +44,8 @@ process.stdout.write(render(['operator']))
   return (await run(process.execPath, [helper], { maxBuffer: 10 * 1024 * 1024 })).stdout
 }
 
-function readPage(source, powers) {
-  const lines = source.replaceAll('\r\n', '\n').split('\n')
+function readPage(contents, powers, source) {
+  const lines = contents.replaceAll('\r\n', '\n').split('\n')
   const startsWithFence = lines[0].trim() === '---'
   const metadataStart = startsWithFence ? 1 : 0
   const metadataEnd = lines.findIndex((line, index) => index >= metadataStart && line.trim() === '---')
@@ -66,6 +66,12 @@ function readPage(source, powers) {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
   body = transcodeHtmlTables(body)
+  body = absolutizeDocsLinks(body, {
+    repository: DOCS_REPOSITORY,
+    revision: DOCS_REVISION,
+    site: DOCS_SITE,
+    source
+  })
   return { title, markdown: `# ${title}\n\n${body}\n` }
 }
 
@@ -88,7 +94,7 @@ async function main() {
       const source = relative(sourceDirectory, file).split(sep).join('/')
       const sourceName = basename(file, extname(file))
       const command = sourceName === 'index' ? 'overview' : sourceName.replaceAll('_', '-')
-      const page = readPage(await readFile(file, 'utf8'), powers)
+      const page = readPage(await readFile(file, 'utf8'), powers, source)
       const outputFile = `pages/${command}.md`
       await writeFile(join(generated, outputFile), page.markdown)
       pages.push({ command, file: outputFile, source, title: page.title })

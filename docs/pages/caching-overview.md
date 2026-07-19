@@ -8,18 +8,18 @@ Caching is, at it's core, a simple concept- by saving the results of expensive c
 
 ### Memory
 
-The most common place to store cached data is in [Memory](/global-objects.html#Memory-object). This is the only option for true persistance- anything stored in [Memory](/global-objects.html#Memory-object) is going to stay there until removed, so if a value is extremely expensive or must be saved this is the place to put it.
+The most common place to store cached data is in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object). This is the only option for true persistance- anything stored in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object) is going to stay there until removed, so if a value is extremely expensive or must be saved this is the place to put it.
 
-There are two major drawbacks with [Memory](/global-objects.html#Memory-object)
+There are two major drawbacks with [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object)
 
-*   Space in [Memory](/global-objects.html#Memory-object) is limited to 2048kb of space.
-*   JSON.parse is run on the [Memory](/global-objects.html#Memory-object) string each tick it is accessed, which is more expensive the more data that is stored.
+*   Space in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object) is limited to 2048kb of space.
+*   JSON.parse is run on the [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object) string each tick it is accessed, which is more expensive the more data that is stored.
 
-For these reasons it makes sense to limit what is placed in [Memory](/global-objects.html#Memory-object).
+For these reasons it makes sense to limit what is placed in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object).
 
 ### Global
 
-The [game loop](/game-loop.html) architecture allows you to define a "loop" function which gets run each tick. Additionally it allows you to define expensive one-time-run code in the outer scope. This is most commonly used to `require` modules-
+The [game loop](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/game-loop.md) architecture allows you to define a "loop" function which gets run each tick. Additionally it allows you to define expensive one-time-run code in the outer scope. This is most commonly used to `require` modules-
 
     // executed on new global
     var mod = require('mod');
@@ -64,7 +64,7 @@ From a performance standpoint the fact that the `require` and `global` caches cl
 ## Tips
 
 *   Be extremely careful what you cache in Memory, as the Memory parse time can be expensive.
-*   Objects are more expensive to parse than strings. Converting items like [RoomPositions](/api/#RoomPosition) to a flat string before caching and then converting back as needed can have a surprisingly large impact.
-*   For extremely large objects with repetitive data- such as [CostMatrixes](/api/#PathFinder-CostMatrix)- compression can save a lot of space. Players going this route should look into [lzstring](http://pieroxy.net/blog/pages/lz-string/index.html), and should also make sure they utilize the `global` cache to minimize the amount of times the same costmatrix has to be decompressed.
+*   Objects are more expensive to parse than strings. Converting items like [RoomPositions](https://docs.screeps.com/api/#RoomPosition) to a flat string before caching and then converting back as needed can have a surprisingly large impact.
+*   For extremely large objects with repetitive data- such as [CostMatrixes](https://docs.screeps.com/api/#PathFinder-CostMatrix)- compression can save a lot of space. Players going this route should look into [lzstring](http://pieroxy.net/blog/pages/lz-string/index.html), and should also make sure they utilize the `global` cache to minimize the amount of times the same costmatrix has to be decompressed.
 *   Traditionally speaking most caching systems put the TTL in the `set` function, but for Screeps it may make more sense to put it in the `get` function. This way the TTL can be adjusted based on need- for example a TTL on a cached costmatrix can be set to Infinity for rooms without visibility and then shortened again when it is so that the data is always available, even if it is a bit stale.
 *   Do not forget to add something to clear stale cache entries out or you may find your Memory slowly expanding over time.

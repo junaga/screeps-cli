@@ -38,7 +38,7 @@ Here is a short example of how to compile C/C++ code using [Emscripten](https://
 ### Build `.wasm` file
 
 You can skip this step if you use an already compiled `.wasm` file from the web. For example,
-we've already compiled the [`addTwo.wasm`](img/addTwo.wasm) file for you from the example below.
+we've already compiled the [`addTwo.wasm`](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/addTwo.wasm) file for you from the example below.
 
 Install Emsripten SDK using [these instructions](https://kripken.github.io/emscripten-site/docs/getting_started/downloads.html#sdk-installation-instructions).
 
@@ -59,11 +59,11 @@ emcc -s WASM=1 -s SIDE_MODULE=1 -O3 addTwo.c -o addTwo.wasm
 
 Add a new module `addTwo` with binary type using this switch:
 
-![](img/binary1.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/binary1.png)
 
 Upload your `addTwo.wasm` file as binary module contents, so that it looks as follows:
 
-![](img/binary2.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/binary2.png)
 
 Click the ✔️ button to commit your modules.
 
@@ -71,7 +71,7 @@ Click the ✔️ button to commit your modules.
 
 If you uploaded your binary module correctly, you should see the following in your in-game IDE:
 
-![](img/binary3.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/binary3.png)
 
 Now you can use the following code to run your imported binary code in `main` using WebAssembly API:
 

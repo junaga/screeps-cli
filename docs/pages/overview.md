@@ -6,11 +6,11 @@ Welcome to the Screeps documentation. Get familiar with the game and explore our
 
 Learn game basics step by step in our interactive tutorial
 
-## [API Reference](/api)
+## [API Reference](https://docs.screeps.com/api)
 
 Reference of all game objects, methods and prototypes
 
-## [Contributed articles](/contributed/rules.html)
+## [Contributed articles](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/contributed/rules.md)
 
 Read articles written by other players, or contribute your own
 

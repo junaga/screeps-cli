@@ -19,19 +19,11 @@ test('docs help lists every bundled guide without an API reference', () => {
   assert.match(result.stdout, /cpu-limit .*How does CPU limit work/)
   assert.match(result.stdout, /power .*Power/)
   assert.doesNotMatch(result.stdout, /^  api\s/m)
-})
+  assert.doesNotMatch(result.stdout, /--search/)
 
-test('documentation search prints only matching sections from every guide', () => {
-  const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs', '--search', 'weakens.*distance'], { encoding: 'utf8' })
-  assert.equal(result.status, 0)
-  assert.match(result.stdout, /^# Defending your room$/m)
-  assert.match(result.stdout, /^## Active defense: towers$/m)
-  assert.match(result.stdout, /effect weakens with the distance/)
-  assert.doesNotMatch(result.stdout, /Safe mode is a defense tactic/)
-
-  const invalid = spawnSync(process.execPath, ['bin/screeps.js', 'docs', '--search', '['], { encoding: 'utf8' })
-  assert.equal(invalid.status, 1)
-  assert.match(invalid.stderr, /Invalid documentation search pattern/)
+  const removed = spawnSync(process.execPath, ['bin/screeps.js', 'docs', '--search', 'tower'], { encoding: 'utf8' })
+  assert.equal(removed.status, 1)
+  assert.match(removed.stderr, /unknown option '--search'/)
 })
 
 test('bare docs is a concise landing page rather than the full topic catalog', () => {
@@ -40,7 +32,6 @@ test('bare docs is a concise landing page rather than the full topic catalog', (
   assert.match(result.stdout, /Offline docs built \d{4}-\d{2}-\d{2}/)
   assert.match(result.stdout, /https:\/\/docs\.screeps\.com\//)
   assert.match(result.stdout, /screeps docs creeps/)
-  assert.match(result.stdout, /screeps docs --search 'tower\|rampart'/)
   assert.match(result.stdout, /screeps docs --help/)
   assert.doesNotMatch(result.stdout, /advanced-grunt/)
 
@@ -51,7 +42,6 @@ test('bare docs is a concise landing page rather than the full topic catalog', (
     revision: 'c7cb981eba13bd6c3c4a3ea274851326d74a506f',
     officialDocs: 'https://docs.screeps.com/',
     read: 'screeps docs creeps',
-    search: "screeps docs --search 'tower|rampart'",
     topics: 'screeps docs --help'
   })
 })

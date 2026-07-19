@@ -21,9 +21,9 @@ Each game tick is controlled by a special syncing code based on Redis. A tick co
 
 A larger picture of stages processing flow could look like this:
 
-![](img/architecture_stage1.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/architecture_stage1.png)
 
-![](img/architecture_stage2.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/architecture_stage2.png)
 
 A task queue is created for each stage. The tasks of the first stage are scripts of all active players, while the second stage deals with game world rooms. The queue is stored as a Redis List, each task being processed separately by a separate machine.
 
@@ -46,7 +46,7 @@ The system is designed to allow easy scaling on two levels:
 
 The Node.js [`vm`](https://nodejs.org/api/vm.html) library is used when performing tasks on the computing game scripts stage. Each node instance process launches a separate fork that does not have access to its parent process. This fork immediately makes an advance request to the database for the data it needs for calculations. Then it creates a context for the user and executes [`vm.runInContext`](https://nodejs.org/api/vm.html#vm_vm_runincontext_code_contextifiedsandbox_options). The context is saved in the fork for the future use which allows you to use the `global` object and `require` cache repeatedly in your scripts. Also, compilation of the script produces [code cached data](http://v8project.blogspot.com.by/2015/07/code-caching.html) which is stored and used to speed up later compilations.
 
-![](img/architecture_run.png)
+![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/architecture_run.png)
 
 Though `runInContext` is invoked with an execution timeout specific for each player, it is not always able to gracefully finish script execution at certain workload types. If this situation occurs, the whole fork rather than vm is terminated when the time is out. All the players contexts in this process disappear and get re-created from scratch.
 

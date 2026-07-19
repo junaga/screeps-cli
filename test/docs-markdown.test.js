@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { transcodeHtmlTables } from '../scripts/docs-markdown.js'
+import { absolutizeDocsLinks, transcodeHtmlTables } from '../scripts/docs-markdown.js'
 
 test('transcodes headers, category rows, inline HTML, and colspans', () => {
   const html = `<table>
@@ -46,5 +46,28 @@ test('turns collapsible table controls into contextual Markdown headings', () =>
     '| Product |',
     '| --- |',
     '| Tube |'
+  ].join('\n'))
+})
+
+test('pins relative docs links and media to the source revision', () => {
+  const options = {
+    repository: 'https://github.com/screeps/docs.git',
+    revision: 'abc123',
+    site: 'https://docs.screeps.com/',
+    source: 'guides/example.md'
+  }
+  const markdown = [
+    '![map](../img/map.png)',
+    '[guide](../control.html#Raising-GCL)',
+    '[API](/api/#Game)',
+    '![](//static.screeps.com/icon.png)',
+    '<video><source src="../img/demo.mp4"></video>'
+  ].join('\n')
+  assert.equal(absolutizeDocsLinks(markdown, options), [
+    '![map](https://raw.githubusercontent.com/screeps/docs/abc123/source/img/map.png)',
+    '[guide](https://github.com/screeps/docs/blob/abc123/source/control.md#raising-gcl)',
+    '[API](https://docs.screeps.com/api/#Game)',
+    '![](https://static.screeps.com/icon.png)',
+    '<video><source src="https://raw.githubusercontent.com/screeps/docs/abc123/source/img/demo.mp4"></video>'
   ].join('\n'))
 })

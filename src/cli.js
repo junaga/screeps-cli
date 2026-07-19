@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline/promises'
 import { assertGameAction, runGameExpression } from './action.js'
 import { createClient, output } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
-import { compileDocsPattern, readDocsManifest, readDocsPage, searchMarkdown } from './docs.js'
+import { readDocsManifest, readDocsPage } from './docs.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
@@ -40,7 +40,7 @@ Game:
   messages [@player]            read conversations or message a player
 
 Reference:
-  docs [topic]                  read or search the game documentation
+  docs [topic]                  read the bundled game documentation
 
 Connection:
   login [server]                connect and remember a Screeps server
@@ -66,7 +66,7 @@ Examples:
   screeps code push ./dist
   screeps console 'Game.cpu.bucket'
   screeps market energy
-  screeps docs --search 'tower|rampart'`
+  screeps docs defense`
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -438,25 +438,9 @@ async function liveConsole(api, expression, options) {
 }
 
 async function docsView(manifest, topic, options) {
-  if (options.search !== undefined) {
-    if (topic) throw new Error('Choose a topic or --search, not both.')
-    if (!options.search) throw new Error('Documentation search pattern cannot be empty.')
-    const pattern = compileDocsPattern(options.search)
-    const pages = await Promise.all(manifest.pages.map(async page => {
-      const markdown = searchMarkdown(await readDocsPage(page.file), pattern)
-      return { topic: page.command, title: page.title, markdown }
-    }))
-    const matches = pages.filter(page => page.markdown)
-    if (options.json) output({ pattern: options.search, matches }, { json: true })
-    else if (matches.length) output(matches.map(page => page.markdown.trimEnd()).join('\n\n---\n\n'))
-    else output(`No documentation matched ${JSON.stringify(options.search)}.`)
-    return
-  }
-
   if (!topic) {
     const landing = {
       read: 'screeps docs creeps',
-      search: "screeps docs --search 'tower|rampart'",
       topics: 'screeps docs --help'
     }
     const metadata = {
@@ -471,13 +455,12 @@ async function docsView(manifest, topic, options) {
       `Official docs: ${manifest.site}`,
       '',
       `Read a guide:    ${landing.read}`,
-      `Search the docs: ${landing.search}`,
       `List all topics: ${landing.topics}`
     ].join('\n'))
     return
   }
   const exact = manifest.pages.find(page => page.command === topic.toLowerCase())
-  if (!exact) throw new Error(`Unknown documentation topic ${JSON.stringify(topic)}. Run screeps docs --help or use --search <pattern>.`)
+  if (!exact) throw new Error(`Unknown documentation topic ${JSON.stringify(topic)}. Run screeps docs --help.`)
   const markdown = await readDocsPage(exact.file)
   if (options.json) return output({ topic: exact.command, title: exact.title, markdown }, { json: true })
   stdout.write(markdown)
@@ -709,8 +692,7 @@ export async function run(program, argv) {
     }))
 
   program.command('docs [topic]')
-    .description('read or search the game documentation')
-    .option('-s, --search <pattern>', 'search every guide with a case-insensitive regular expression')
+    .description('read the bundled game documentation')
     .addHelpText('after', `\nTopics:\n${docsManifest.pages.map(page => `  ${page.command.padEnd(22)} ${page.title}`).join('\n')}`)
     .action(async (topic, _options, command) => docsView(docsManifest, topic, inheritedOptions(command)))
 

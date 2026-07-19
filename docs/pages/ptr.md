@@ -22,7 +22,7 @@ Registering new accounts on PTR is blocked. Each time after data is copied from 
 
 Please take note that construction of any structures on the PTR costs only 1 energy unit and the controller upgrade requires 1000 energy units. It allows quick creation of infrastructure you need for testing purposes.
 
-If you use [grunt-screeps](/commit.html) for committing your scripts from a local machine, you can provide <code style="white-space: nowrap;">ptr: true</code> option in order to commit your code to the PTR.
+If you use [grunt-screeps](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/commit.md) for committing your scripts from a local machine, you can provide <code style="white-space: nowrap;">ptr: true</code> option in order to commit your code to the PTR.
 
 Engine code changes from the PTR are periodically deployed to the `ptr` branch of the private server package on npm, so you can use this command to run it locally:
 
