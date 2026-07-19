@@ -1,14 +1,15 @@
-import { stderr, stdin } from 'node:process'
+import { stderr, stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline/promises'
+import { assertGameAction, runGameExpression } from './action.js'
 import { createClient, output } from './client.js'
 import { API_CLIENT, CLI_VERSION, assertServerCompatibility, formatServerSummary } from './compatibility.js'
 import { normalizeUrl } from './config.js'
 import { readDocsManifest, readDocsPage } from './docs.js'
 import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatRooms, formatStatus } from './format.js'
 import { parseValue, readModules, writeModules } from './io.js'
-import { decodeTerrain, describeRoomChanges, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
+import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
 import { login } from './token.js'
-import { coordinate, flagColor, integer, pageNumber } from './validation.js'
+import { coordinate, flagColor, integer, pageNumber, positiveNumber, selectedRoom } from './validation.js'
 import { DOCS_REPOSITORY, DOCS_REVISION, GAME_PROTOCOL, formatVersion } from './version.js'
 
 async function promptForDesktopLogin(url) {
@@ -28,6 +29,11 @@ function printResult(response, sentence, options) {
   if (response?.error || response?.ok === 0) throw new Error(response.error || 'The game rejected the action.')
   if (options.json) output(response, { json: true })
   else output(sentence)
+}
+
+async function submitGameAction(api, expression, shard, sentence) {
+  assertGameAction(await runGameExpression(api, expression, shard))
+  output(sentence)
 }
 
 async function supportsLiveSocket(api) {
@@ -131,6 +137,61 @@ async function watchRoom(api, room, options) {
   await waitForInterrupt(api.socket)
 }
 
+async function showLiveRoom(api, room, options, ownUserId) {
+  if (!stdout.isTTY) throw new Error('Live room view needs an interactive terminal. Use screeps watch for plain text.')
+  if (options.json) throw new Error('Live room view cannot be combined with --json.')
+  const [terrainResponse, objectResponse, timeResponse] = await Promise.all([
+    api.gameRoomTerrain(room, options.shard),
+    api.gameRoomObjects(room, options.shard),
+    api.gameTime(options.shard)
+  ])
+  const terrain = decodeTerrain(terrainResponse)
+  const state = new Map(objectResponse.objects.map(object => [object._id, object]))
+  let gameTime = timeResponse.time
+  let visible = false
+  const draw = () => {
+    if (!visible) return
+    const clear = '\x1b[H\x1b[2J'
+    if ((stdout.columns && stdout.columns < 53) || (stdout.rows && stdout.rows < 55)) {
+      stdout.write(`${clear}Resize this terminal to at least 53 columns by 55 rows.\nCurrent size: ${stdout.columns} by ${stdout.rows}.`)
+      return
+    }
+    stdout.write(`${clear}${renderLiveRoomFrame({
+      name: room,
+      terrain,
+      objects: [...state.values()],
+      ownUserId,
+      gameTime,
+      color: options.color
+    })}`)
+  }
+  const update = event => {
+    gameTime = event.data.gameTime ?? gameTime
+    mergeRoomObjects(state, event.data.objects)
+    draw()
+  }
+
+  try {
+    await api.socket.subscribeRoom(room, options.shard, update)
+    await api.socket.connect()
+  } catch {
+    api.socket.disconnect()
+    throw new Error('Live room view is unavailable. Run screeps login to refresh the live session.')
+  }
+
+  visible = true
+  stdout.write('\x1b[?1049h\x1b[?25l')
+  stdout.on('resize', draw)
+  draw()
+  try {
+    await waitForInterrupt(api.socket)
+  } finally {
+    visible = false
+    stdout.removeListener('resize', draw)
+    stdout.write('\x1b[?25h\x1b[?1049l')
+  }
+}
+
 export async function run(program, argv) {
   const docsManifest = await readDocsManifest()
   program
@@ -138,14 +199,15 @@ export async function run(program, argv) {
     .description('Play Screeps World from the terminal')
     .version(formatVersion(), '-V, --version', 'show CLI and compatibility versions')
     .option('-s, --shard <name>', 'world shard')
+    .option('-r, --room <name>', 'room (or set SCREEPS_ROOM)')
     .option('--json', 'print machine-readable JSON')
     .option('--no-color', 'disable ANSI color')
     .showSuggestionAfterError()
     .addHelpText('after', `
 Examples:
   screeps status
-  screeps room E4S1
-  screeps watch E4S1`)
+  screeps --room E4S1 room --live`)
+    .action((_options, command) => command.help())
 
   program.command('login <server>')
     .description('connect this CLI to a Screeps server')
@@ -213,29 +275,34 @@ Example:
       else output(formatRooms(response))
     }))
 
-  program.command('room <name>')
+  program.command('room')
     .description('draw the current room')
-    .action(withClient(async ({ api }, room, options) => {
+    .option('--live', 'redraw as the room changes')
+    .action(withClient(async ({ api }, options) => {
+      const room = selectedRoom(options.room)
       const me = await api.authMe()
-      await renderOnce(api, room, options, me._id)
+      if (options.live) await showLiveRoom(api, room, options, me._id)
+      else await renderOnce(api, room, options, me._id)
     }))
 
-  program.command('tile <room> <x> <y>')
+  program.command('tile <x> <y>')
     .description('show everything on one tile')
-    .action(withClient(async ({ api }, room, x, y, options) => {
+    .action(withClient(async ({ api }, x, y, options) => {
+      const room = selectedRoom(options.room)
       const me = await api.authMe()
       await renderTileOnce(api, room, coordinate(x), coordinate(y), options, me._id)
     }))
 
-  program.command('watch <room>')
+  program.command('watch')
     .description('stream room activity in English')
-    .action(withClient(async ({ api }, room, options) => {
-      await watchRoom(api, room, options)
+    .action(withClient(async ({ api }, options) => {
+      await watchRoom(api, selectedRoom(options.room), options)
     }))
 
-  program.command('map <center> [radius]')
+  program.command('map [radius]')
     .description('show the world around a room')
-    .action(withClient(async ({ api }, center, radius = '5', options) => {
+    .action(withClient(async ({ api }, radius = '5', options) => {
+      const center = selectedRoom(options.room)
       const numericRadius = integer(radius, 'Radius', { min: 0, max: 20 })
       const rooms = roomsAround(center, numericRadius)
       const response = await api.gameMapStats(rooms, 'owner0', options.shard)
@@ -244,6 +311,7 @@ Example:
     }))
 
   const memory = program.command('memory').description('inspect game Memory')
+    .action((_options, command) => command.help())
   memory.command('get [path]')
     .description('show all Memory or one path')
     .action(withClient(async ({ api }, path, options) => output(await api.userMemoryGet(path, options.shard), { json: true })))
@@ -252,28 +320,30 @@ Example:
     .action(withClient(async ({ api }, path, value, options) => output(await api.userMemorySet(path, parseValue(value), options.shard), { json: true })))
 
   const code = program.command('code').description('manage game code')
+    .action((_options, command) => command.help())
   code.command('pull [directory]')
-    .description('download a code branch into a directory')
-    .option('-b, --branch <name>', 'code branch', 'default')
+    .description('download game code into a directory')
     .action(withClient(async ({ api }, directory = 'bot', options) => {
-      const response = await api.userCodeGet(options.branch)
+      const response = await api.userCodeGet('default')
       const paths = await writeModules(directory, response.modules)
       output(`Wrote ${paths.length} modules to ${directory}.`)
     }))
   code.command('push [directory]')
-    .description('deploy JavaScript and WASM modules from a directory')
-    .option('-b, --branch <name>', 'code branch', 'default')
+    .description('deploy game code from a directory')
     .action(withClient(async ({ api }, directory = 'bot', options) => {
       const modules = await readModules(directory)
-      await api.userCodeSet({ branch: options.branch, modules })
-      output(`Deployed ${Object.keys(modules).length} modules to branch "${options.branch}".`)
+      await api.userCodeSet({ branch: 'default', modules })
+      output(`Deployed ${Object.keys(modules).length} modules.`)
     }))
 
   program.command('console [expression]')
     .description('run game JavaScript')
     .option('-f, --follow', 'stream console messages')
     .action(withClient(async ({ api }, expression, options) => {
-      if (expression) output(await api.userConsole(expression, options.shard), { json: true })
+      if (expression && !options.follow) {
+        const result = await runGameExpression(api, expression, options.shard)
+        return output(result === undefined ? null : result, options)
+      }
       if (!options.follow) return
       await api.socket.subscribeUserConsole(event => {
         const shard = event.data.shard ? `[${event.data.shard}] ` : ''
@@ -283,6 +353,7 @@ Example:
       })
       try {
         await api.socket.connect()
+        if (expression) await api.userConsole(expression, options.shard)
       } catch {
         api.socket.disconnect()
         throw new Error('This server rejected live console authentication. Console streaming is unavailable; one-time expressions still work.')
@@ -291,41 +362,48 @@ Example:
     }))
 
   const flag = program.command('flag').description('manage flags')
-  flag.command('place <name> <room> <x> <y>')
+    .action((_options, command) => command.help())
+  flag.command('place <name> <x> <y>')
     .description('place a named flag in a room')
     .option('--primary <number>', 'primary color', flagColor, 1)
     .option('--secondary <number>', 'secondary color', flagColor, 1)
-    .action(withClient(async ({ api }, name, room, x, y, options) => {
+    .action(withClient(async ({ api }, name, x, y, options) => {
+      const room = selectedRoom(options.room)
       const position = { x: coordinate(x), y: coordinate(y) }
       const response = await api.gameCreateFlag(room, position.x, position.y, name, options.primary, options.secondary, options.shard)
       printResult(response, `Placed flag ${name} at ${room} ${position.x},${position.y}.`, options)
     }))
-  flag.command('remove <name> <room>')
+  flag.command('remove <name>')
     .description('remove a flag from a room')
-    .action(withClient(async ({ api }, name, room, options) => {
+    .action(withClient(async ({ api }, name, options) => {
+      const room = selectedRoom(options.room)
       const response = await api.gameRemoveFlag(room, name, options.shard)
       printResult(response, `Removed flag ${name} from ${room}.`, options)
     }))
 
-  program.command('build <type> <room> <x> <y>')
+  program.command('build <type> <x> <y>')
     .description('place a construction site')
     .option('--name <name>', 'optional structure name')
-    .action(withClient(async ({ api }, type, room, x, y, options) => {
+    .action(withClient(async ({ api }, type, x, y, options) => {
+      const room = selectedRoom(options.room)
       const position = { x: coordinate(x), y: coordinate(y) }
       const response = await api.gameCreateConstruction(room, position.x, position.y, type, options.name, options.shard)
       printResult(response, `Placed ${type} construction at ${room} ${position.x},${position.y}.`, options)
     }))
 
   const spawn = program.command('spawn').description('manage spawns')
-  spawn.command('place <room> <x> <y> [name]')
+    .action((_options, command) => command.help())
+  spawn.command('place <x> <y> [name]')
     .description('place your first spawn')
-    .action(withClient(async ({ api }, room, x, y, name, options) => {
+    .action(withClient(async ({ api }, x, y, name, options) => {
+      const room = selectedRoom(options.room)
       const position = { x: coordinate(x), y: coordinate(y) }
       const response = await api.gamePlaceSpawn(room, position.x, position.y, name, options.shard)
       printResult(response, `Placed spawn${name ? ` ${name}` : ''} at ${room} ${position.x},${position.y}.`, options)
     }))
 
   const message = program.command('message').description('message other players')
+    .action((_options, command) => command.help())
   message.command('list [user]')
     .description('show conversations or messages with one player')
     .action(withClient(async ({ api }, user, options) => {
@@ -340,7 +418,13 @@ Example:
       printResult(response, `Sent message to ${user}.`, options)
     }))
 
-  const market = program.command('market').description('browse the market')
+  const market = program.command('market')
+    .description('trade on the market')
+    .action((_options, command) => command.help())
+    .addHelpText('after', `
+Examples:
+  screeps market orders energy
+  screeps --room E4S1 market buy energy 5000 --price 0.25`)
   market.command('orders <resource>')
     .description('show buy and sell orders for a resource')
     .action(withClient(async ({ api }, resource, options) => {
@@ -361,6 +445,68 @@ Example:
       const response = await api.userMoneyHistory(page == null ? 0 : pageNumber(page))
       if (options.json) output(response, { json: true })
       else output(formatMarketHistory(response))
+    }))
+  for (const type of ['buy', 'sell']) {
+    market.command(`${type} <resource> <amount>`)
+      .description(`create a ${type} order`)
+      .requiredOption('--price <credits>', 'credits per unit')
+      .action(withClient(async ({ api }, resource, amount, options) => {
+        const totalAmount = integer(amount, 'Amount', { min: 1 })
+        const price = positiveNumber(options.price, 'Price')
+        const room = selectedRoom(options.room)
+        const order = { type, resourceType: resource, price, totalAmount, roomName: room }
+        await submitGameAction(
+          api,
+          `Game.market.createOrder(${JSON.stringify(order)})`,
+          options.shard,
+          `Created a ${type} order for ${totalAmount} ${resource} at ${price} credits in ${room}.`
+        )
+      }))
+  }
+  market.command('deal <order> <amount>')
+    .description('accept an existing order')
+    .action(withClient(async ({ api }, order, amount, options) => {
+      const quantity = integer(amount, 'Amount', { min: 1 })
+      const room = selectedRoom(options.room)
+      const args = [order, quantity, room].map(JSON.stringify).join(',')
+      await submitGameAction(
+        api,
+        `Game.market.deal(${args})`,
+        options.shard,
+        `Completed ${quantity} units of order ${order} through ${room}.`
+      )
+    }))
+  market.command('price <order> <credits>')
+    .description('change an order price')
+    .action(withClient(async ({ api }, order, credits, options) => {
+      const price = positiveNumber(credits, 'Price')
+      await submitGameAction(
+        api,
+        `Game.market.changeOrderPrice(${JSON.stringify(order)},${price})`,
+        options.shard,
+        `Changed order ${order} to ${price} credits per unit.`
+      )
+    }))
+  market.command('extend <order> <amount>')
+    .description('add volume to an order')
+    .action(withClient(async ({ api }, order, amount, options) => {
+      const quantity = integer(amount, 'Amount', { min: 1 })
+      await submitGameAction(
+        api,
+        `Game.market.extendOrder(${JSON.stringify(order)},${quantity})`,
+        options.shard,
+        `Added ${quantity} units to order ${order}.`
+      )
+    }))
+  market.command('cancel <order>')
+    .description('cancel an order')
+    .action(withClient(async ({ api }, order, options) => {
+      await submitGameAction(
+        api,
+        `Game.market.cancelOrder(${JSON.stringify(order)})`,
+        options.shard,
+        `Cancelled order ${order}.`
+      )
     }))
 
   program.command('raw <method> <path> [params]', { hidden: true })
