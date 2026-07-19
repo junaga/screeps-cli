@@ -19,7 +19,7 @@ Inspect a target:
 
 World:
   map [room]                    explore the world around a room
-  watch [target]                stream changes as plain text
+  watch [target]                stream meaningful events as plain text
 
 Programming:
   code [dir]                    inspect and synchronize game code
