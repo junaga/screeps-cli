@@ -6,13 +6,14 @@ $ screeps --help
 Screeps — program a world that never stops.
 
 Usage:
-  screeps [target] [options]
-  screeps <command> [arguments]
+  screeps [options] [target]
+  screeps [options] <room> <x,y>
+  screeps [options] <command> [arguments]
 
 Inspect a target:
   screeps                       your interactive empire overview
   screeps W8N3                  an interactive live room
-  screeps W8N3:24,18            a tile and everything on it
+  screeps W8N3 24,18            a tile and everything on it
   screeps <object-id>            a visible game object
   screeps @player               another player
 
@@ -22,7 +23,7 @@ World:
   notifications                read notices sent by your code
 
 Programming:
-  code [diff|pull|push] [dir]   compare or synchronize game code
+  code [dir]                    inspect and synchronize game code
   console [javascript]          evaluate JavaScript or open a live console
   memory [path]                 inspect or edit persistent Memory
 
@@ -41,7 +42,6 @@ Connection:
 Options:
   -S, --server <name>           use a remembered server
   -s, --shard <name>            use a world shard
-  -r, --room <name>             use a room when a command needs one
   -j, --json                    emit JSON; streams use NDJSON
       --no-color                disable terminal color
   -h, --help                    show help for any command
@@ -54,6 +54,7 @@ actions and examples live one level down: `screeps <command> --help`.
 Examples:
   screeps
   screeps W8N3
+  screeps W8N3 24,18
   screeps watch W8N3
   screeps code push ./dist
   screeps console 'Game.cpu.bucket'
