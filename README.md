@@ -1,49 +1,61 @@
-# Screeps
-
-A calm, complete terminal client for programming and playing Screeps.
+# Screeps CLI
 
 ```text
 $ screeps --help
 
-Usage: screeps [options] [command]
+Screeps — program a world that never stops.
 
-Play and program a persistent Screeps world.
+Usage:
+  screeps [target] [options]
+  screeps <command> [arguments]
 
-Commands:
-  play [room]                 open the interactive game client
-  status                      see what needs your attention
-  map [room]                  explore the world around a room
-  room [room]                 inspect a room, tile, or game object
-  watch [room]                follow meaningful room activity
-  code [pull|push|diff] [dir] sync your local game code
-  console [expression]        run JavaScript or open a live console
-  memory [path] [value]       inspect or change persistent Memory
-  market [resource]           browse, trade, and manage orders
-  mail [player] [message]     read or send player messages
-  docs [topic]                search or read the game guide
-  login [server]              connect to a world
-  logout                      forget the current credentials
-  use [server|shard|room]     show or change the current context
+Inspect a target:
+  screeps                       your interactive empire overview
+  screeps W8N3                  an interactive live room
+  screeps W8N3:24,18            a tile and everything on it
+  screeps <object-id>            a visible game object
+  screeps @player               another player
+
+World:
+  map [room]                    explore the world around a room
+  watch [target]                stream changes as plain text
+  notifications                read notices sent by your code
+
+Programming:
+  code [diff|pull|push] [dir]   compare or synchronize game code
+  console [javascript]          evaluate JavaScript or open a live console
+  memory [path]                 inspect or edit persistent Memory
+
+Game:
+  market [resource]             browse prices, trade, and manage orders
+  power                         manage power creeps and their powers
+  messages [player]             read conversations or message a player
+
+Reference:
+  docs [topic...]               search or read the game documentation
+
+Connection:
+  login [server]                connect and remember a Screeps server
+  logout [server]               remove a remembered login
 
 Options:
-  -r, --room <name>           use this room
-  -s, --shard <name>          use this shard
-  -S, --server <name>         use this server
-      --json                  print stable machine-readable output
-      --no-color              disable terminal color
-  -h, --help                  show help for any command
-  -V, --version               show client and game versions
+  -S, --server <name>           use a remembered server
+  -s, --shard <name>            use a world shard
+  -r, --room <name>             use a room when a command needs one
+  -j, --json                    emit stable machine-readable output
+      --no-color                disable terminal color
+  -h, --help                    show help for any command
+  -V, --version                 show version and compatibility information
 
-Run a command without arguments for its natural default view.
-Run `screeps <command> --help` for its actions and examples.
+Commands without arguments open their useful default view. Detailed help lives
+one level down: `screeps <command> --help`.
 
 Examples:
-  screeps play
-  screeps status
-  screeps map W8N3
-  screeps code push
+  screeps
+  screeps W8N3
+  screeps watch W8N3
+  screeps code push ./dist
   screeps console 'Game.cpu.bucket'
-  screeps memory colonies.W8N3
   screeps market energy
-  screeps docs defending
+  screeps docs tower falloff
 ```
