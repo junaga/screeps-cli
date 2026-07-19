@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { coordinatesToRoomName, decodeTerrain, describeRoomChanges, mergeRoomObjects, renderRoom, renderTile, roomNameToCoordinates, roomsAround } from '../src/room.js'
+import { coordinatesToRoomName, decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, roomNameToCoordinates, roomsAround } from '../src/room.js'
 
 test('decodes the compact 2500-character terrain format', () => {
   const encoded = `${'0'.repeat(51)}1${'0'.repeat(2448)}`
@@ -47,6 +47,14 @@ test('renders terrain and objects at their coordinates', () => {
   assert.equal(mapRow.slice(3, 5), '#S')
 })
 
+test('renders a fixed live frame for a human terminal', () => {
+  const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
+  const rendered = renderLiveRoomFrame({ name: 'W0N0', terrain, objects: [], gameTime: 42, color: false })
+  assert.equal(rendered.split('\n').length, 55)
+  assert.match(rendered, /^W0N0  tick 42  live · Ctrl-C to close/)
+  assert.match(rendered, /@ yours  ! hostile/)
+})
+
 test('describes everything on a tile', () => {
   const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
   terrain[3][2] = 2
@@ -62,23 +70,26 @@ test('describes everything on a tile', () => {
   assert.match(rendered, /creep Worker1 · yours · 12\/50 energy · 300\/300 hits/)
 })
 
-test('translates room patches into honest English events', () => {
+test('reports room state changes without narrating redundant action logs', () => {
   const state = new Map([['worker', {
     _id: 'worker', type: 'creep', name: 'Worker1', x: 1, y: 2,
     hits: 300, hitsMax: 300, store: { energy: 10 }
+  }], ['source', {
+    _id: 'source', type: 'source', x: 3, y: 4, energy: 3000
   }]])
   const lines = describeRoomChanges(state, {
     worker: {
       x: 2,
       store: { energy: 12 },
-      actionLog: { harvest: { x: 3, y: 4 } }
+      actionLog: { harvest: { x: 3, y: 4 }, say: { message: 'work' } }
     },
-    source: { type: 'source', x: 3, y: 4, energy: 3000 }
+    source: { energy: 2998 },
+    site: { type: 'constructionSite', x: 5, y: 6, progress: 1, progressTotal: 100 }
   })
   assert.deepEqual(lines, [
     'creep Worker1 moved 1,2 -> 2,2.',
-    'creep Worker1 harvested 2 energy at 3,4.',
-    'source appeared at 3,4.'
+    'source energy changed 3,000 -> 2,998.',
+    'construction site appeared at 5,6.'
   ])
   assert.equal(state.get('worker').x, 2)
 })

@@ -66,6 +66,14 @@ export function renderRoom({ name, terrain, objects, ownUserId, gameTime, color 
   return lines.join('\n')
 }
 
+export function renderLiveRoomFrame(room) {
+  const lines = renderRoom(room).split('\n')
+  lines[0] += '  live · Ctrl-C to close'
+  lines[lines.length - 1] = '# wall  ~ swamp  . road  S source  M mineral'
+  lines.push('C controller  P spawn  @ yours  ! hostile  + site')
+  return lines.join('\n')
+}
+
 function words(value) {
   return String(value || 'object').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()
 }
@@ -118,10 +126,12 @@ function position(value) {
   return `${value.x},${value.y}`
 }
 
-const ACTIONS = {
-  attack: 'attacked', rangedAttack: 'ranged attacked', rangedMassAttack: 'made a ranged mass attack',
-  heal: 'healed', rangedHeal: 'ranged healed', harvest: 'harvested', repair: 'repaired',
-  build: 'built', upgradeController: 'upgraded the controller', reserveController: 'reserved the controller'
+function resources(object) {
+  const values = { ...(object.store || {}) }
+  if (object.energy != null && values.energy == null) values.energy = object.energy
+  if (object.mineralAmount != null && object.mineralType) values[object.mineralType] = object.mineralAmount
+  if (object.amount != null && object.resourceType) values[object.resourceType] = object.amount
+  return values
 }
 
 export function describeRoomChanges(state, patches, users = {}) {
@@ -142,34 +152,18 @@ export function describeRoomChanges(state, patches, users = {}) {
     if ((patch.x != null || patch.y != null) && (previous.x !== current.x || previous.y !== current.y)) {
       lines.push(`${name} moved ${position(previous)} -> ${position(current)}.`)
     }
-    const previousEnergy = previous.store?.energy ?? previous.energy
-    const currentEnergy = current.store?.energy ?? current.energy
-    const energyChange = (patch.store || patch.energy != null) && previousEnergy != null
-      ? currentEnergy - previousEnergy
-      : 0
-    const energyAction = energyChange > 0 && current.actionLog?.harvest
-      ? `${name} harvested ${amount(energyChange)} energy at ${position(current.actionLog.harvest)}.`
-      : energyChange < 0 && current.actionLog?.upgradeController
-        ? `${name} spent ${amount(-energyChange)} energy upgrading the controller at ${position(current.actionLog.upgradeController)}.`
-        : energyChange < 0 && current.actionLog?.build
-          ? `${name} spent ${amount(-energyChange)} energy building at ${position(current.actionLog.build)}.`
-          : energyChange < 0 && current.actionLog?.repair
-            ? `${name} spent ${amount(-energyChange)} energy repairing at ${position(current.actionLog.repair)}.`
-            : null
-    for (const [action, target] of Object.entries(patch.actionLog || {})) {
-      if (!target) continue
-      if (action === 'say') lines.push(`${name} said "${target.message}".`)
-      else if (ACTIONS[action] && !(energyAction && ['harvest', 'upgradeController', 'build', 'repair'].includes(action))) {
-        lines.push(`${name} ${ACTIONS[action]} at ${position(target)}.`)
-      }
-    }
     if (patch.hits != null && previous.hits != null && previous.hits !== current.hits) {
       const change = current.hits - previous.hits
       lines.push(`${name} ${change < 0 ? 'lost' : 'recovered'} ${amount(Math.abs(change))} hits (${amount(current.hits)}/${amount(current.hitsMax)}).`)
     }
-    if (energyAction) lines.push(energyAction)
-    else if (energyChange) {
-      lines.push(`${name} energy changed ${amount(previousEnergy)} -> ${amount(currentEnergy)}.`)
+    if (!['creep', 'powerCreep'].includes(current.type) && (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null)) {
+      const before = resources(previous)
+      const after = resources(current)
+      for (const resource of new Set([...Object.keys(before), ...Object.keys(after)])) {
+        if (before[resource] !== after[resource]) {
+          lines.push(`${name} ${resource} changed ${amount(before[resource] ?? 0)} -> ${amount(after[resource] ?? 0)}.`)
+        }
+      }
     }
     if (patch.progress != null && previous.progress != null && previous.progress !== current.progress) {
       lines.push(`${name} progress changed ${amount(previous.progress)} -> ${amount(current.progress)}.`)
