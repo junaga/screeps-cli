@@ -65,9 +65,14 @@ test('describes everything on a tile', () => {
       { type: 'creep', name: 'Worker1', user: 'me', x: 2, y: 3, hits: 300, hitsMax: 300, store: { energy: 12 }, storeCapacity: 50 }
     ]
   })
-  assert.match(rendered, /Terrain: swamp/)
+  assert.match(rendered, /^W0N0 2,3 · swamp$/m)
   assert.match(rendered, /road · 100\/500 hits/)
   assert.match(rendered, /creep Worker1 · yours · 12\/50 energy · 300\/300 hits/)
+})
+
+test('keeps an empty tile compact', () => {
+  const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
+  assert.equal(renderTile({ name: 'E4S1', x: 24, y: 18, terrain, objects: [] }), 'E4S1 24,18 · plain\nNo objects.')
 })
 
 test('reports room state changes without narrating redundant action logs', () => {

@@ -4,7 +4,7 @@ import { assertGameAction, runGameExpression } from './action.js'
 import { createClient, output } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { readDocsManifest, readDocsPage } from './docs.js'
-import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
+import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
 import { login } from './token.js'
@@ -272,7 +272,7 @@ async function objectSnapshot(api, id, options) {
   if (object.progress != null) condition.push(`${displayNumber(object.progress)}/${displayNumber(object.progressTotal)} progress`)
   if (object.ticksToLive != null) condition.push(`${displayNumber(object.ticksToLive)} ticks left`)
   if (condition.length) lines.push(condition.join(' · '))
-  if (object.body) lines.push(object.body.map(part => String(part.type).toUpperCase()).join(' '))
+  if (object.body?.length) lines.push(formatBody(object.body))
   output(lines.join('\n'))
   return object
 }
@@ -330,6 +330,8 @@ async function watchRooms(api, targets, options) {
   const rooms = []
   let targetId
   let targetPosition
+  let targetLabel = 'your empire'
+  let targetInfo = { kind: 'empire' }
   if (!targets.target) {
     const me = await api.authMe()
     rooms.push(...((await api.userRooms(me._id)).rooms || []))
@@ -337,13 +339,20 @@ async function watchRooms(api, targets, options) {
     const parsed = parseTarget(targets.target, targets.position)
     if (parsed.kind === 'room' || parsed.kind === 'tile') {
       rooms.push(parsed.room)
-      if (parsed.kind === 'tile') targetPosition = { x: parsed.x, y: parsed.y }
+      targetLabel = parsed.room
+      targetInfo = parsed
+      if (parsed.kind === 'tile') {
+        targetPosition = { x: parsed.x, y: parsed.y }
+        targetLabel += ` ${parsed.x},${parsed.y}`
+      }
     }
     else if (parsed.kind === 'object') {
       const object = await objectSnapshot(api, parsed.id, { ...options, silent: true })
       if (!object?.pos?.room) throw new Error(`Object ${parsed.id} has no room position.`)
       rooms.push(object.pos.room)
       targetId = parsed.id
+      targetLabel = `${object.type}${object.name ? ` ${object.name}` : ''} in ${object.pos.room}`
+      targetInfo = { kind: 'object', id: parsed.id, room: object.pos.room, type: object.type, name: object.name ?? null }
     } else throw new Error('Watch accepts an empire, room, tile, or object target.')
   }
   if (!rooms.length) throw new Error('There are no rooms to watch.')
@@ -363,11 +372,12 @@ async function watchRooms(api, targets, options) {
     else output(`${displayNumber(event.tick)}  ${rooms.length > 1 ? `${event.room}  ` : ''}${event.message}`)
   }
   if (options.json) {
-    for (const room of rooms) output({ type: 'start', tick: ticks.get(room), room }, { ndjson: true })
+    for (const room of rooms) output({ type: 'start', tick: ticks.get(room), room, target: targetInfo }, { ndjson: true })
   } else if (rooms.length === 1) {
-    output(`Watching ${rooms[0]} from tick ${displayNumber(ticks.get(rooms[0]))}.`)
+    const label = targets.target ? targetLabel : `${targetLabel} in ${rooms[0]}`
+    output(`Watching ${label} from tick ${displayNumber(ticks.get(rooms[0]))}.`)
   } else {
-    output(`Watching ${rooms.length} rooms. Press Ctrl-C to stop.`)
+    output(`Watching ${targetLabel} across ${rooms.length} rooms. Press Ctrl-C to stop.`)
   }
 
   try {
@@ -429,9 +439,19 @@ async function liveConsole(api, expression, options) {
 
 async function docsView(manifest, topics, options) {
   if (!topics.length) {
-    const pages = manifest.pages.map(page => ({ topic: page.command, title: page.title }))
-    if (options.json) output(pages, { json: true })
-    else output(pages.map(page => `${page.topic.padEnd(22)} ${page.title}`).join('\n'))
+    const landing = {
+      read: 'screeps docs creeps',
+      search: 'screeps docs tower falloff',
+      topics: 'screeps docs --help'
+    }
+    if (options.json) output({ offline: true, ...landing }, { json: true })
+    else output([
+      'Screeps guides are available offline.',
+      '',
+      `Read a guide:    ${landing.read}`,
+      `Search the docs: ${landing.search}`,
+      `List all topics: ${landing.topics}`
+    ].join('\n'))
     return
   }
   if (topics.length === 1) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatMarketOrders, formatMessages, formatMyOrders, formatRooms, formatStatus } from '../src/format.js'
+import { formatBody, formatMarketOrders, formatMessages, formatMyOrders, formatRooms, formatStatus } from '../src/format.js'
 
 test('formats status as a short player summary', () => {
   const text = formatStatus({
@@ -41,4 +41,9 @@ test('formats messages without exposing server records', () => {
     formatMessages({ messages: [{ message: { respondent: '42', type: 'out', text: 'hi' } }], users: { 42: { username: 'Ada' } } }),
     'you: hi'
   )
+})
+
+test('compresses consecutive body parts without losing their order', () => {
+  const body = ['tough', 'tough', 'move', 'move', 'tough'].map(type => ({ type }))
+  assert.equal(formatBody(body), '2 TOUGH · 2 MOVE · TOUGH')
 })

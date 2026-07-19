@@ -27,6 +27,23 @@ test('documentation search ranks relevant partial matches', () => {
   assert.match(result.stdout, /defense .*Defending your room/)
 })
 
+test('bare docs is a concise landing page rather than the full topic catalog', () => {
+  const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs'], { encoding: 'utf8' })
+  assert.equal(result.status, 0)
+  assert.match(result.stdout, /screeps docs creeps/)
+  assert.match(result.stdout, /screeps docs tower falloff/)
+  assert.match(result.stdout, /screeps docs --help/)
+  assert.doesNotMatch(result.stdout, /advanced-grunt/)
+
+  const json = spawnSync(process.execPath, ['bin/screeps.js', '--json', 'docs'], { encoding: 'utf8' })
+  assert.deepEqual(JSON.parse(json.stdout), {
+    offline: true,
+    read: 'screeps docs creeps',
+    search: 'screeps docs tower falloff',
+    topics: 'screeps docs --help'
+  })
+})
+
 test('market help exposes every action and explicit terminal context', () => {
   const result = spawnSync(process.execPath, ['bin/screeps.js', 'market', '--help'], { encoding: 'utf8' })
   assert.equal(result.status, 0)

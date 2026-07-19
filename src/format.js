@@ -35,6 +35,18 @@ export function formatMessages(response, player) {
   }).join('\n')
 }
 
+export function formatBody(body = []) {
+  const runs = []
+  for (const part of body) {
+    if (!part?.type) continue
+    const type = String(part.type).toUpperCase()
+    const previous = runs.at(-1)
+    if (previous?.type === type) previous.count++
+    else runs.push({ type, count: 1 })
+  }
+  return runs.map(run => `${run.count > 1 ? `${run.count} ` : ''}${run.type}`).join(' · ')
+}
+
 export function formatMarketOrders(response, resource) {
   const orders = response?.list || []
   if (!orders.length) return `No ${resource} orders.`

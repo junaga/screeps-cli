@@ -112,9 +112,8 @@ export function renderTile({ name, x, y, terrain, objects, users, ownUserId }) {
   const terrainName = (terrain[y]?.[x] & 1) ? 'wall' : (terrain[y]?.[x] & 2) ? 'swamp' : 'plain'
   const occupants = objects.filter(object => object.x === x && object.y === y)
   return [
-    `${name} ${x},${y}`,
-    `Terrain: ${terrainName}`,
-    ...(occupants.length ? occupants.map(object => describeObject(object, users, ownUserId)) : ['Nothing else is here.'])
+    `${name} ${x},${y} · ${terrainName}`,
+    ...(occupants.length ? occupants.map(object => describeObject(object, users, ownUserId)) : ['No objects.'])
   ].join('\n')
 }
 
