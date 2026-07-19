@@ -35,7 +35,8 @@ export function formatMarketOrders(response, resource) {
   return orders.map(order => {
     const amount = order.remainingAmount ?? order.amount
     const room = order.roomName ? ` in ${order.roomName}` : ''
-    return `${order.type} ${number(amount)} ${resource} at ${order.price}${room}`
+    const id = order._id || order.id
+    return `${id ? `${id}  ` : ''}${order.type} ${number(amount)} ${resource} at ${order.price}${room}`
   }).join('\n')
 }
 
@@ -44,7 +45,9 @@ export function formatMyOrders(response) {
   if (!orders.length) return 'You have no market orders.'
   return orders.map(order => {
     const amount = order.remainingAmount ?? order.amount
-    return `${order.type} ${number(amount)} ${order.resourceType} at ${order.price} in ${order.roomName}`
+    const room = order.roomName ? ` in ${order.roomName}` : ''
+    const id = order._id || order.id
+    return `${id ? `${id}  ` : ''}${order.type} ${number(amount)} ${order.resourceType} at ${order.price}${room}`
   }).join('\n')
 }
 
