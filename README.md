@@ -28,8 +28,8 @@ Programming:
 
 Game:
   market [resource]             browse prices, trade, and manage orders
-  power                         manage power creeps and their powers
-  messages [player]             read conversations or message a player
+  power [creep]                 inspect and develop power creeps
+  messages [@player]            read conversations or message a player
 
 Reference:
   docs [topic...]               search or read the game documentation
@@ -41,7 +41,7 @@ Connection:
 Options:
       --server <name>           use a remembered server
       --shard <name>            use a world shard
-  -j, --json                    emit JSON; streams use NDJSON
+  -j, --json                    emit stable JSON; streams use NDJSON
       --no-color                disable terminal color
   -h, --help                    show help for any command
   -V, --version                 show version and compatibility information
