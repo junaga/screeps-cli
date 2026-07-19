@@ -87,9 +87,23 @@ test('reports room state changes without narrating redundant action logs', () =>
     site: { type: 'constructionSite', x: 5, y: 6, progress: 1, progressTotal: 100 }
   })
   assert.deepEqual(lines, [
-    'creep Worker1 moved 1,2 -> 2,2.',
-    'source energy changed 3,000 -> 2,998.',
     'construction site appeared at 5,6.'
   ])
   assert.equal(state.get('worker').x, 2)
+})
+
+test('reports routine deltas only for a verbose or explicitly watched object', () => {
+  const initial = () => new Map([['worker', {
+    _id: 'worker', type: 'creep', name: 'Worker1', x: 1, y: 2,
+    hits: 300, hitsMax: 300, store: { energy: 10 }
+  }]])
+  const patches = { worker: { x: 2, store: { energy: 12 }, progress: 2 } }
+  assert.deepEqual(describeRoomChanges(initial(), patches, {}, { verbose: true }), [
+    'creep Worker1 moved 1,2 -> 2,2.',
+    'creep Worker1 energy changed 10 -> 12.'
+  ])
+  assert.deepEqual(describeRoomChanges(initial(), patches, {}, { targetId: 'worker' }), [
+    'creep Worker1 moved 1,2 -> 2,2.',
+    'creep Worker1 energy changed 10 -> 12.'
+  ])
 })

@@ -134,10 +134,12 @@ function resources(object) {
   return values
 }
 
-export function describeRoomChanges(state, patches, users = {}) {
+export function describeRoomChanges(state, patches, users = {}, options = {}) {
   const lines = []
   for (const [id, patch] of Object.entries(patches || {})) {
     const previous = state.get(id)
+    const detailed = options.verbose || options.targetId === id
+    if (options.targetId && options.targetId !== id) continue
     if (patch === null) {
       if (previous) lines.push(`${objectName(previous)} disappeared from ${position(previous)}.`)
       continue
@@ -149,14 +151,16 @@ export function describeRoomChanges(state, patches, users = {}) {
       lines.push(`${name} appeared at ${position(current)}.`)
       continue
     }
-    if ((patch.x != null || patch.y != null) && (previous.x !== current.x || previous.y !== current.y)) {
+    if (detailed && (patch.x != null || patch.y != null) && (previous.x !== current.x || previous.y !== current.y)) {
       lines.push(`${name} moved ${position(previous)} -> ${position(current)}.`)
     }
     if (patch.hits != null && previous.hits != null && previous.hits !== current.hits) {
       const change = current.hits - previous.hits
-      lines.push(`${name} ${change < 0 ? 'lost' : 'recovered'} ${amount(Math.abs(change))} hits (${amount(current.hits)}/${amount(current.hitsMax)}).`)
+      if (detailed || change < 0 || ['creep', 'powerCreep'].includes(current.type)) {
+        lines.push(`${name} ${change < 0 ? 'lost' : 'recovered'} ${amount(Math.abs(change))} hits (${amount(current.hits)}/${amount(current.hitsMax)}).`)
+      }
     }
-    if (!['creep', 'powerCreep'].includes(current.type) && (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null)) {
+    if (detailed && (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null)) {
       const before = resources(previous)
       const after = resources(current)
       for (const resource of new Set([...Object.keys(before), ...Object.keys(after)])) {
@@ -165,7 +169,7 @@ export function describeRoomChanges(state, patches, users = {}) {
         }
       }
     }
-    if (patch.progress != null && previous.progress != null && previous.progress !== current.progress) {
+    if (detailed && patch.progress != null && previous.progress != null && previous.progress !== current.progress) {
       lines.push(`${name} progress changed ${amount(previous.progress)} -> ${amount(current.progress)}.`)
     }
     if (patch.level != null && previous.level != null && previous.level !== current.level) {
@@ -174,6 +178,17 @@ export function describeRoomChanges(state, patches, users = {}) {
     if (patch.spawning !== undefined && Boolean(previous.spawning) !== Boolean(current.spawning)) {
       if (current.spawning) lines.push(`${name} started spawning ${current.spawning.name || 'a creep'}.`)
       else if (previous.spawning) lines.push(`${name} finished spawning ${previous.spawning.name || 'a creep'}.`)
+    }
+    if (patch.user !== undefined && previous.user !== current.user) {
+      const username = current.user ? users[current.user]?.username || current.user : null
+      lines.push(username ? `${name} is now owned by ${username}.` : `${name} became neutral.`)
+    }
+    if (patch.reservation !== undefined && JSON.stringify(previous.reservation) !== JSON.stringify(current.reservation)) {
+      const username = current.reservation?.user && (users[current.reservation.user]?.username || current.reservation.user)
+      lines.push(username ? `${name} is now reserved by ${username}.` : `${name} is no longer reserved.`)
+    }
+    if (patch.safeMode !== undefined && Boolean(previous.safeMode) !== Boolean(current.safeMode)) {
+      lines.push(`${name} safe mode ${current.safeMode ? 'activated' : 'ended'}.`)
     }
   }
   mergeRoomObjects(state, patches)
