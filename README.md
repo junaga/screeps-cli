@@ -11,8 +11,8 @@ Usage:
   screeps [options] <command> [arguments]
 
 Inspect a target:
-  screeps                       your interactive empire overview
-  screeps W8N3                  an interactive live room
+  screeps                       your empire and what needs attention
+  screeps W8N3                  a live room
   screeps W8N3 24,18            a tile and everything on it
   screeps <object-id>            a visible game object
   screeps @player               another player
@@ -20,7 +20,6 @@ Inspect a target:
 World:
   map [room]                    explore the world around a room
   watch [target]                stream changes as plain text
-  notifications                read notices sent by your code
 
 Programming:
   code [dir]                    inspect and synchronize game code
@@ -40,16 +39,16 @@ Connection:
   logout [server]               remove a remembered login
 
 Options:
-  -S, --server <name>           use a remembered server
-  -s, --shard <name>            use a world shard
+      --server <name>           use a remembered server
+      --shard <name>            use a world shard
   -j, --json                    emit JSON; streams use NDJSON
       --no-color                disable terminal color
   -h, --help                    show help for any command
   -V, --version                 show version and compatibility information
 
 Views are interactive in a terminal and become one-shot snapshots when piped.
-`--json` changes their format, never their meaning. Default views are read-only;
-actions and examples live one level down: `screeps <command> --help`.
+--json changes their format, never their meaning. Default views are read-only.
+Actions and examples live one level down: screeps <command> --help
 
 Examples:
   screeps
