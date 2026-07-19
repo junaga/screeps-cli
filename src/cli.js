@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline/promises'
 import { assertGameAction, runGameExpression } from './action.js'
 import { createClient, output } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
-import { readDocsManifest, readDocsPage } from './docs.js'
+import { compileDocsPattern, readDocsManifest, readDocsPage, searchMarkdown } from './docs.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
@@ -40,7 +40,7 @@ Game:
   messages [@player]            read conversations or message a player
 
 Reference:
-  docs [topic...]               search or read the game documentation
+  docs [topic]                  read or search the game documentation
 
 Connection:
   login [server]                connect and remember a Screeps server
@@ -66,7 +66,7 @@ Examples:
   screeps code push ./dist
   screeps console 'Game.cpu.bucket'
   screeps market energy
-  screeps docs tower falloff`
+  screeps docs --search 'tower|rampart'`
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -437,16 +437,38 @@ async function liveConsole(api, expression, options) {
   await waitForInterrupt(api.socket)
 }
 
-async function docsView(manifest, topics, options) {
-  if (!topics.length) {
+async function docsView(manifest, topic, options) {
+  if (options.search !== undefined) {
+    if (topic) throw new Error('Choose a topic or --search, not both.')
+    if (!options.search) throw new Error('Documentation search pattern cannot be empty.')
+    const pattern = compileDocsPattern(options.search)
+    const pages = await Promise.all(manifest.pages.map(async page => {
+      const markdown = searchMarkdown(await readDocsPage(page.file), pattern)
+      return { topic: page.command, title: page.title, markdown }
+    }))
+    const matches = pages.filter(page => page.markdown)
+    if (options.json) output({ pattern: options.search, matches }, { json: true })
+    else if (matches.length) output(matches.map(page => page.markdown.trimEnd()).join('\n\n---\n\n'))
+    else output(`No documentation matched ${JSON.stringify(options.search)}.`)
+    return
+  }
+
+  if (!topic) {
     const landing = {
       read: 'screeps docs creeps',
-      search: 'screeps docs tower falloff',
+      search: "screeps docs --search 'tower|rampart'",
       topics: 'screeps docs --help'
     }
-    if (options.json) output({ offline: true, ...landing }, { json: true })
+    const metadata = {
+      offline: true,
+      builtAt: manifest.builtAt,
+      revision: manifest.revision,
+      officialDocs: manifest.site
+    }
+    if (options.json) output({ ...metadata, ...landing }, { json: true })
     else output([
-      'Screeps guides are available offline.',
+      `Offline docs built ${manifest.builtAt} · screeps/docs ${manifest.revision.slice(0, 7)}`,
+      `Official docs: ${manifest.site}`,
       '',
       `Read a guide:    ${landing.read}`,
       `Search the docs: ${landing.search}`,
@@ -454,28 +476,11 @@ async function docsView(manifest, topics, options) {
     ].join('\n'))
     return
   }
-  if (topics.length === 1) {
-    const exact = manifest.pages.find(page => page.command === topics[0])
-    if (exact) {
-      const markdown = await readDocsPage(exact.file)
-      if (options.json) return output({ topic: exact.command, title: exact.title, markdown }, { json: true })
-      return stdout.write(markdown)
-    }
-  }
-  const aliases = { falloff: ['falloff', 'effect weakens', 'weakens with the distance'] }
-  const words = topics.map(topic => aliases[topic.toLowerCase()] || [topic.toLowerCase()])
-  const pages = await Promise.all(manifest.pages.map(async page => ({ ...page, text: await readDocsPage(page.file) })))
-  const matches = pages.map(page => {
-    const haystack = `${page.command} ${page.title} ${page.text}`.toLowerCase()
-    return { ...page, score: words.filter(variants => variants.some(word => haystack.includes(word))).length }
-  }).filter(page => page.score).sort((left, right) => right.score - left.score || left.command.localeCompare(right.command))
-  const best = words.length > 1 && matches.some(page => page.score === words.length)
-    ? matches.filter(page => page.score === words.length)
-    : matches
-  const result = best.map(page => ({ topic: page.command, title: page.title }))
-  if (options.json) output(result, { json: true })
-  else if (result.length) output(result.map(page => `${page.topic.padEnd(22)} ${page.title}`).join('\n'))
-  else output(`No documentation matched "${topics.join(' ')}".`)
+  const exact = manifest.pages.find(page => page.command === topic.toLowerCase())
+  if (!exact) throw new Error(`Unknown documentation topic ${JSON.stringify(topic)}. Run screeps docs --help or use --search <pattern>.`)
+  const markdown = await readDocsPage(exact.file)
+  if (options.json) return output({ topic: exact.command, title: exact.title, markdown }, { json: true })
+  stdout.write(markdown)
 }
 
 function powerExpression(name) {
@@ -703,10 +708,11 @@ export async function run(program, argv) {
       else output(`Sent message to @${username}.`)
     }))
 
-  program.command('docs [topics...]')
-    .description('search or read the game documentation')
+  program.command('docs [topic]')
+    .description('read or search the game documentation')
+    .option('-s, --search <pattern>', 'search every guide with a case-insensitive regular expression')
     .addHelpText('after', `\nTopics:\n${docsManifest.pages.map(page => `  ${page.command.padEnd(22)} ${page.title}`).join('\n')}`)
-    .action(async (topics, _options, command) => docsView(docsManifest, topics, connectionOptions(command)))
+    .action(async (topic, _options, command) => docsView(docsManifest, topic, inheritedOptions(command)))
 
   program.command('login [server]')
     .description('connect and remember a Screeps server')

@@ -32,7 +32,7 @@ Game:
   messages [@player]            read conversations or message a player
 
 Reference:
-  docs [topic...]               search or read the game documentation
+  docs [topic]                  read or search the game documentation
 
 Connection:
   login [server]                connect and remember a Screeps server
@@ -58,5 +58,5 @@ Examples:
   screeps code push ./dist
   screeps console 'Game.cpu.bucket'
   screeps market energy
-  screeps docs tower falloff
+  screeps docs --search 'tower|rampart'
 ```

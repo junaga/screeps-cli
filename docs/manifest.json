@@ -1,7 +1,9 @@
 {
   "gameProtocol": 14,
+  "site": "https://docs.screeps.com/",
   "repository": "https://github.com/screeps/docs.git",
   "revision": "c7cb981eba13bd6c3c4a3ea274851326d74a506f",
+  "builtAt": "2026-07-20",
   "pages": [
     {
       "command": "advanced-grunt",
