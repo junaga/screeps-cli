@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { readModules, writeModules } from '../src/io.js'
+import { compareModules, readModules, writeModules } from '../src/io.js'
 
 test('round-trips nested JavaScript and WASM modules', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'screeps-modules-test-'))
@@ -24,4 +24,16 @@ test('refuses module names that escape the destination', async t => {
   await assert.rejects(() => writeModules(directory, { '../outside': 'nope' }), /Invalid module name/)
   await assert.rejects(() => writeModules(directory, { 'nested/../outside': 'nope' }), /Invalid module name/)
   await assert.rejects(() => readFile(join(directory, '..', 'outside.js')), /ENOENT/)
+})
+
+test('compares local modules to deployed modules', () => {
+  assert.deepEqual(compareModules(
+    { main: 'new', added: 'yes', wasm: { binary: 'same' } },
+    { main: 'old', removed: 'yes', wasm: { binary: 'same' } }
+  ), {
+    added: ['added'],
+    changed: ['main'],
+    removed: ['removed'],
+    unchanged: ['wasm']
+  })
 })

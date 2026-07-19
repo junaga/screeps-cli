@@ -64,10 +64,26 @@ export function environmentConnection() {
   return Object.keys(connection).length ? connection : null
 }
 
-export async function getConnection({ requireAuth = true } = {}) {
+function configuredServer(config, selector) {
+  if (!selector) return config.current
+  const lowered = selector.toLowerCase()
+  const match = Object.entries(config.servers || {}).find(([url, connection]) => {
+    const parsed = new URL(url)
+    return url.toLowerCase() === lowered || parsed.host.toLowerCase() === lowered ||
+      parsed.hostname.toLowerCase() === lowered || connection.name?.toLowerCase() === lowered
+  })
+  if (match) return match[0]
+  try {
+    const normalized = normalizeUrl(selector)
+    if (config.servers?.[normalized]) return normalized
+  } catch {}
+  throw new Error(`Unknown server "${selector}". Run: screeps login ${selector}`)
+}
+
+export async function getConnection({ requireAuth = true, server } = {}) {
   const config = await readConfig()
   const env = environmentConnection() || {}
-  const selectedUrl = env.url ? normalizeUrl(env.url) : config.current
+  const selectedUrl = env.url ? normalizeUrl(env.url) : configuredServer(config, server)
   const saved = config.servers?.[selectedUrl] || {}
   const connection = Object.fromEntries(Object.entries({ ...saved, ...env, url: selectedUrl }).filter(([, value]) => value !== undefined && value !== ''))
   if (!connection.url) throw new Error('No active server. Run: screeps login <server>')
@@ -75,6 +91,17 @@ export async function getConnection({ requireAuth = true } = {}) {
     throw new Error('The active server has no credentials. Run: screeps login <server>')
   }
   return { connection, config }
+}
+
+export async function forgetServer(selector) {
+  const config = await readConfig()
+  const url = configuredServer(config, selector)
+  if (!url) throw new Error('No remembered server to log out from.')
+  if (!config.servers?.[url]) throw new Error(`Server "${selector}" is not remembered.`)
+  delete config.servers[url]
+  if (config.current === url) config.current = Object.keys(config.servers)[0]
+  await writeConfig(config)
+  return url
 }
 
 export function normalizeUrl(input) {

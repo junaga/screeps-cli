@@ -53,3 +53,20 @@ export async function writeModules(directory, modules) {
   }
   return written
 }
+
+function sameModule(left, right) {
+  if (typeof left === 'string' || typeof right === 'string') return left === right
+  return left?.binary === right?.binary
+}
+
+export function compareModules(local, remote) {
+  const names = [...new Set([...Object.keys(local || {}), ...Object.keys(remote || {})])].sort()
+  const result = { added: [], changed: [], removed: [], unchanged: [] }
+  for (const name of names) {
+    if (!(name in (remote || {}))) result.added.push(name)
+    else if (!(name in (local || {}))) result.removed.push(name)
+    else if (sameModule(local[name], remote[name])) result.unchanged.push(name)
+    else result.changed.push(name)
+  }
+  return result
+}

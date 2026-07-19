@@ -12,7 +12,7 @@ function addServerPassword(api, serverPassword) {
 }
 
 export async function createClient(options = {}) {
-  const { connection } = await getConnection({ requireAuth: options.requireAuth !== false })
+  const { connection } = await getConnection({ requireAuth: options.requireAuth !== false, server: options.server })
   const api = new ScreepsHttpClient({
     url: connection.url,
     // The upstream client requires credentials at construction time even for

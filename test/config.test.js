@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { getConnection, normalizeUrl, writeConfig } from '../src/config.js'
+import { forgetServer, getConnection, normalizeUrl, readConfig, writeConfig } from '../src/config.js'
 
 async function isolatedConfig(t) {
   const directory = await mkdtemp(join(tmpdir(), 'screeps-config-test-'))
@@ -50,4 +50,20 @@ test('normalizes safe server URLs and rejects embedded credentials', () => {
   assert.equal(normalizeUrl('example.test:21025/api/'), 'http://example.test:21025')
   assert.throws(() => normalizeUrl('https://user:pass@example.test'), /credentials/)
   assert.throws(() => normalizeUrl('ftp://example.test'), /HTTP or HTTPS/)
+})
+
+test('selects and forgets remembered servers by hostname', async t => {
+  await isolatedConfig(t)
+  const first = 'https://screeps.com'
+  const second = 'http://example.test:21025'
+  await writeConfig({
+    current: first,
+    servers: {
+      [first]: { url: first, token: 'first-secret' },
+      [second]: { url: second, token: 'second-secret' }
+    }
+  })
+  assert.equal((await getConnection({ server: 'example.test' })).connection.url, second)
+  assert.equal(await forgetServer('example.test'), second)
+  assert.deepEqual(Object.keys((await readConfig()).servers), [first])
 })
