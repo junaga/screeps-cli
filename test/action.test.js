@@ -23,7 +23,8 @@ test('captures the result of a tick-based game action', async () => {
 
 test('translates common game return codes', () => {
   assert.doesNotThrow(() => assertGameAction(0))
-  assert.throws(() => assertGameAction(-5), /order was not found/)
+  assert.throws(() => assertGameAction(-3), /name is already in use/)
+  assert.throws(() => assertGameAction(-5), /target was not found/)
   assert.throws(() => assertGameAction(-6), /enough credits or resources/)
 })
 

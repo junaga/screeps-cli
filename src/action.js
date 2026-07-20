@@ -45,12 +45,14 @@ export async function runGameExpression(api, expression, shard) {
 export function assertGameAction(result) {
   if (result === 0) return
   const meanings = {
-    '-1': 'you do not own the order',
-    '-5': 'the order was not found',
+    '-1': 'you do not own the target',
+    '-3': 'the name is already in use',
+    '-4': 'the target is busy or unavailable',
+    '-5': 'the target was not found',
     '-6': 'you do not have enough credits or resources',
-    '-8': 'there is no capacity for this action',
+    '-8': 'the action limit or capacity was reached',
     '-10': 'the game rejected an argument',
-    '-11': 'the terminal is still on cooldown'
+    '-11': 'the action is still on cooldown'
   }
   throw new Error(`The game rejected the action (${result}${meanings[result] ? `: ${meanings[result]}` : ''}).`)
 }
