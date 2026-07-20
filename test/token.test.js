@@ -16,9 +16,15 @@ test('extracts newest unique private-server desktop sessions', () => {
 })
 
 test('extracts the shared password for the selected server only', () => {
-  const data = Buffer.from('{"settings":{"host":"example.test","port":"21025","password":"server-secret","prefix":""}}')
-  assert.equal(extractServerPassword([data], 'example.test'), 'server-secret')
-  assert.equal(extractServerPassword([data], 'other.example'), undefined)
+  const data = Buffer.from([
+    '{"settings":{"protocol":"http","host":"example.test","port":"21025","password":"first-secret","prefix":""}}',
+    '{"settings":{"protocol":"http","host":"example.test","port":21026,"password":"second-secret","prefix":"/world"}}'
+  ].join('\0'))
+  assert.equal(extractServerPassword([data], 'http://example.test:21025'), 'first-secret')
+  assert.equal(extractServerPassword([data], 'http://example.test:21026/world'), 'second-secret')
+  assert.equal(extractServerPassword([data], 'https://example.test:21025'), undefined)
+  assert.equal(extractServerPassword([data], 'http://example.test:21026/other'), undefined)
+  assert.equal(extractServerPassword([data], 'http://other.example:21025'), undefined)
 })
 
 test('builds a live client from a newly authenticated HTTP token', () => {
@@ -48,6 +54,7 @@ test('validates and persists a supplied API token', async t => {
       assert.equal(request.headers['x-token'], 'persistent-token')
       return response.end(JSON.stringify({ ok: 1, _id: 'me', username: 'Ada', password: true }))
     }
+    if (request.url === '/api/authmod') return response.end(JSON.stringify({ ok: 1, name: 'screepsmod-auth' }))
     if (request.url === '/api/version') return response.end(JSON.stringify({ ok: 1, protocol: 14 }))
     response.writeHead(404).end()
   })
@@ -90,6 +97,7 @@ test('imports a persistent token from an active desktop session', async t => {
       assert.equal(request.headers['x-token'], desktopToken)
       return response.end(JSON.stringify({ ok: 1, _id: 'me', username: 'Ada', password: true }))
     }
+    if (request.url === '/api/authmod') return response.end(JSON.stringify({ ok: 1, name: 'screepsmod-auth' }))
     if (request.url === '/api/user/auth-token' && request.method === 'POST') {
       assert.equal(request.headers['x-token'], desktopToken)
       return response.end(JSON.stringify({ ok: 1, token: 'imported-token' }))
@@ -114,6 +122,68 @@ test('imports a persistent token from an active desktop session', async t => {
   assert.equal(prompted, true)
   const config = JSON.parse(await readFile(process.env.SCREEPS_CLI_CONFIG, 'utf8'))
   assert.equal(config.servers[url].token, 'imported-token')
+})
+
+test('never probes a server with older desktop sessions', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'screeps-session-isolation-test-'))
+  const storage = join(directory, 'leveldb')
+  const previousConfig = process.env.SCREEPS_CLI_CONFIG
+  const previousToken = process.env.SCREEPS_TOKEN
+  process.env.SCREEPS_CLI_CONFIG = join(directory, 'config.json')
+  delete process.env.SCREEPS_TOKEN
+  await mkdir(storage)
+  const matching = 'a'.repeat(40)
+  const currentForeign = 'b'.repeat(40)
+  await writeFile(join(storage, '000001.log'), Buffer.from(
+    `auth+\u0000"${matching}" auth+\u0000"${currentForeign}"`, 'latin1'))
+  t.after(async () => {
+    if (previousConfig === undefined) delete process.env.SCREEPS_CLI_CONFIG
+    else process.env.SCREEPS_CLI_CONFIG = previousConfig
+    if (previousToken === undefined) delete process.env.SCREEPS_TOKEN
+    else process.env.SCREEPS_TOKEN = previousToken
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  const received = []
+  const server = createServer((request, response) => {
+    if (request.url === '/api/auth/me') received.push(request.headers['x-token'])
+    response.setHeader('Content-Type', 'application/json')
+    response.end(JSON.stringify({ ok: 0, error: 'wrong server' }))
+  })
+  await new Promise(resolve => server.listen(0, resolve))
+  t.after(() => new Promise(resolve => server.close(resolve)))
+
+  const url = `http://127.0.0.1:${server.address().port}`
+  await assert.rejects(
+    login({ server: url, storagePath: storage, onDesktopRequired() {} }),
+    /current desktop session does not match/i
+  )
+  assert.deepEqual(received, [currentForeign])
+})
+
+test('explains when a stock private server cannot create durable credentials', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'screeps-authmod-test-'))
+  const previousConfig = process.env.SCREEPS_CLI_CONFIG
+  const previousToken = process.env.SCREEPS_TOKEN
+  process.env.SCREEPS_CLI_CONFIG = join(directory, 'config.json')
+  process.env.SCREEPS_TOKEN = 'short-lived-token'
+  t.after(async () => {
+    if (previousConfig === undefined) delete process.env.SCREEPS_CLI_CONFIG
+    else process.env.SCREEPS_CLI_CONFIG = previousConfig
+    if (previousToken === undefined) delete process.env.SCREEPS_TOKEN
+    else process.env.SCREEPS_TOKEN = previousToken
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  const server = createServer((request, response) => {
+    response.setHeader('Content-Type', 'application/json')
+    if (request.url === '/api/auth/me') return response.end(JSON.stringify({ ok: 1, _id: 'me', username: 'Ada' }))
+    response.writeHead(404).end(JSON.stringify({ error: 'not found' }))
+  })
+  await new Promise(resolve => server.listen(0, resolve))
+  t.after(() => new Promise(resolve => server.close(resolve)))
+
+  await assert.rejects(login({ server: `http://127.0.0.1:${server.address().port}` }), /needs screepsmod-auth/)
 })
 
 test('exchanges a rotating Screeps socket token', async t => {

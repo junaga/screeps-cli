@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { createHttpClient, createSessionToken, exchangeSocketToken } from './client.js'
+import { createHttpClient, createSessionToken, exchangeSocketToken, requireDurableAuthentication } from './client.js'
 import { normalizeUrl, readConfig, writeConfig } from './config.js'
 import { assertServerCompatibility } from './version.js'
 
@@ -29,13 +29,36 @@ export function extractSessionCandidates(buffers) {
   return [...new Set(found)].reverse()
 }
 
-export function extractServerPassword(buffers, hostname) {
-  const escaped = hostname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const pattern = new RegExp(`"host":"${escaped}"[\\s\\S]{0,240}?"password":"((?:\\\\.|[^"])*)"`, 'g')
+function jsonString(value) {
+  try { return JSON.parse(`"${value}"`) } catch { return value }
+}
+
+function field(record, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = new RegExp(`"${escaped}"\\s*:\\s*(?:"((?:\\\\.|[^"])*)"|(-?\\d+(?:\\.\\d+)?|true|false|null))`).exec(record)
+  if (!match) return undefined
+  return match[1] == null ? JSON.parse(match[2]) : jsonString(match[1])
+}
+
+export function extractServerPassword(buffers, serverUrl) {
+  const endpoint = new URL(serverUrl)
+  const expectedPort = endpoint.port || (endpoint.protocol === 'https:' ? '443' : '80')
+  const expectedPrefix = endpoint.pathname === '/' ? '' : endpoint.pathname.replace(/\/$/, '')
   let password
   for (const buffer of buffers) {
-    for (const match of buffer.toString('latin1').matchAll(pattern)) {
-      try { password = JSON.parse(`"${match[1]}"`) } catch { password = match[1] }
+    const text = buffer.toString('latin1')
+    for (const match of text.matchAll(/"host"\s*:\s*"((?:\\.|[^"])*)"/g)) {
+      const start = Math.max(0, text.lastIndexOf('{', match.index))
+      const closing = text.indexOf('}', match.index)
+      const record = text.slice(start, closing < 0 ? match.index + 512 : closing + 1)
+      if (jsonString(match[1]) !== endpoint.hostname) continue
+      if (String(field(record, 'port')) !== expectedPort) continue
+      const protocol = field(record, 'protocol')
+      if (protocol && protocol.replace(/:$/, '') !== endpoint.protocol.replace(/:$/, '')) continue
+      const prefix = field(record, 'prefix')
+      if (prefix != null && prefix.replace(/\/$/, '') !== expectedPrefix) continue
+      const candidate = field(record, 'password')
+      if (candidate != null) password = candidate
     }
   }
   return password
@@ -121,19 +144,16 @@ async function findDesktopSession({ connection, storagePath }) {
   if (!candidates.length) throw new Error('No private-server session found. Open Screeps, connect to this server, leave it running, then retry.')
 
   const baseUrl = connection.url.replace(/\/$/, '')
-  const hostname = new URL(baseUrl).hostname
-  const serverPassword = connection.serverPassword ?? extractServerPassword(buffers, hostname)
-  let sessionToken
-  let identity
-
-  for (const candidate of candidates) {
-    const result = await identityFor({ url: baseUrl, token: candidate, serverPassword })
-    if (!result || (connection.username && result.identity.username !== connection.username)) continue
-    sessionToken = result.token
-    identity = result.identity
-    break
+  const serverPassword = connection.serverPassword ?? extractServerPassword(buffers, baseUrl)
+  // LevelDB may contain sessions for many servers. The final auth entry is the
+  // desktop client's current session; never disclose older candidates by
+  // probing an unrelated server with them.
+  const result = await identityFor({ url: baseUrl, token: candidates[0], serverPassword })
+  if (!result || (connection.username && result.identity.username !== connection.username)) {
+    throw new Error('The current desktop session does not match this server. Connect to it in Screeps, leave it open, then retry.')
   }
-  if (!sessionToken) throw new Error('No active desktop session matched this server. Open Screeps, connect to it, leave it running, then retry.')
+  const sessionToken = result.token
+  const identity = result.identity
 
   return { identity, serverPassword, sessionToken }
 }
@@ -141,6 +161,8 @@ async function findDesktopSession({ connection, storagePath }) {
 async function importDesktopToken({ connection, storagePath }) {
   const baseUrl = connection.url.replace(/\/$/, '')
   const { identity, serverPassword, sessionToken } = await findDesktopSession({ connection, storagePath })
+
+  await requireDurableAuthentication({ url: baseUrl, token: sessionToken, serverPassword })
 
   const body = await request({ url: baseUrl, token: sessionToken, serverPassword },
     'POST', '/api/user/auth-token', { type: 'full', description: 'screeps-terminal CLI' })
@@ -175,6 +197,7 @@ export async function login({ server, username, serverPassword, shard, storagePa
   const identity = await validateToken({ ...connection, token: suppliedToken })
 
   if (identity) {
+    await requireDurableAuthentication({ ...connection, token: suppliedToken })
     await validateServer({ ...connection, token: suppliedToken })
     const live = await prepareLiveLogin({ connection, config, identity, token: suppliedToken })
     await saveLogin(config, {

@@ -5,7 +5,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
-import { createClient, discoverShard, marketItems, playerId, shardItems } from '../src/client.js'
+import {
+  createClient, createHttpClient, createLiveSocket, discoverShard,
+  isOfficialServerUrl, marketItems, playerId, shardItems
+} from '../src/client.js'
 import { writeConfig } from '../src/config.js'
 
 test('selects one shard or combines all shard results', () => {
@@ -50,6 +53,77 @@ test('discovers an occupied shard, then falls back to the busiest shard', async 
   assert.equal(await discoverShard(api), 'shard3')
 })
 
+test('classifies only the real Screeps hostname as official', () => {
+  assert.equal(isOfficialServerUrl('https://screeps.com/ptr'), true)
+  assert.equal(isOfficialServerUrl('https://my-screeps.com'), false)
+  assert.equal(isOfficialServerUrl('https://screeps.com.example.org'), false)
+  assert.equal(isOfficialServerUrl('https://example.org/screeps.com'), false)
+  assert.equal(createHttpClient({ url: 'https://my-screeps.com', token: 'x' }).isOfficialServer, false)
+})
+
+test('uses a valid persistent live token before a stale saved password', async t => {
+  let signins = 0
+  const server = createServer((request, response) => {
+    if (request.url === '/api/auth/signin') signins++
+    response.writeHead(401).end()
+  })
+  const sockets = new WebSocketServer({ server })
+  await new Promise(resolve => server.listen(0, resolve))
+  t.after(() => new Promise(resolve => server.close(resolve)))
+  sockets.on('connection', socket => socket.on('message', message => {
+    if (message.toString() === 'auth persistent-live') socket.send('auth ok rotated')
+  }))
+
+  const url = `http://127.0.0.1:${server.address().port}`
+  const socket = createLiveSocket(
+    { token: 'persistent-live', async me() { return { _id: 'me' } } },
+    { url, token: 'persistent-live', username: 'player', password: 'stale' }
+  )
+  await socket.connect()
+  socket.disconnect()
+  assert.equal(signins, 0)
+})
+
+test('reconnects successfully and restores each subscription once', async t => {
+  const server = createServer()
+  const sockets = new WebSocketServer({ server })
+  await new Promise(resolve => server.listen(0, resolve))
+  const url = `http://127.0.0.1:${server.address().port}`
+  const socket = createLiveSocket(
+    { token: 'persistent-live', async me() { return { _id: 'me' } } },
+    { url, token: 'persistent-live' }
+  )
+  t.after(() => {
+    socket.disconnect()
+    return new Promise(resolve => server.close(resolve))
+  })
+
+  let connections = 0
+  const subscriptions = []
+  let resolveRestored
+  const restored = new Promise(resolve => { resolveRestored = resolve })
+  sockets.on('connection', ws => {
+    const connection = ++connections
+    ws.on('message', message => {
+      const text = message.toString()
+      if (text === 'auth persistent-live') ws.send('auth ok rotated')
+      if (text === 'subscribe room:W1N1') {
+        subscriptions.push(connection)
+        if (connection === 1) ws.close()
+        if (connection === 2) resolveRestored()
+      }
+    })
+  })
+
+  await socket.connect()
+  await socket.subscribe('room:W1N1', () => {})
+  await Promise.race([
+    restored,
+    new Promise((_resolve, reject) => setTimeout(() => reject(new Error('reconnect timed out')), 3000))
+  ])
+  assert.deepEqual(subscriptions, [1, 2])
+})
+
 test('creates a fresh live session without persisting its rotation', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'screeps-client-test-'))
   const previousConfig = process.env.SCREEPS_CLI_CONFIG
@@ -73,6 +147,7 @@ test('creates a fresh live session without persisting its rotation', async t => 
   t.after(() => new Promise(resolve => server.close(resolve)))
   sockets.on('connection', socket => socket.on('message', message => {
     if (message.toString() === 'auth fresh-session') socket.send('auth ok next-live')
+    else if (message.toString().startsWith('auth ')) socket.send('auth failed')
   }))
 
   const address = server.address()

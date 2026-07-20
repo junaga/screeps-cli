@@ -1,4 +1,5 @@
 import { on, once } from 'node:events'
+import { setTimeout as delay } from 'node:timers/promises'
 import WebSocket from 'ws'
 import { ScreepsHttpClient } from 'screeps-api'
 import { getConnection } from './config.js'
@@ -18,10 +19,38 @@ function addServerPassword(api, serverPassword) {
   })
 }
 
+export function isOfficialServerUrl(serverUrl) {
+  try {
+    return new URL(serverUrl).hostname.toLowerCase() === 'screeps.com'
+  } catch {
+    return false
+  }
+}
+
+function correctServerClassification(api, serverUrl) {
+  const url = new URL(serverUrl)
+  const official = isOfficialServerUrl(serverUrl)
+  Object.defineProperties(api, {
+    isOfficialServer: { configurable: true, value: official },
+    isPtrServer: { configurable: true, value: official && /^\/ptr(?:\/|$)/.test(url.pathname) },
+    isSeasonServer: { configurable: true, value: official && /^\/season(?:\/|$)/.test(url.pathname) }
+  })
+}
+
 export function createHttpClient(connection) {
   const api = new ScreepsHttpClient(connection)
+  correctServerClassification(api, connection.url)
   addServerPassword(api, connection.serverPassword)
   return api
+}
+
+export async function requireDurableAuthentication(connection) {
+  if (isOfficialServerUrl(connection.url)) return
+  try {
+    const response = await createHttpClient({ ...connection, token: connection.token || 'anonymous' }).authmod()
+    if (response?.ok === 1 && response.name) return
+  } catch {}
+  throw new Error('This private server needs screepsmod-auth before the CLI can save a durable login.')
 }
 
 export async function createSessionToken(connection) {
@@ -57,25 +86,96 @@ export async function exchangeSocketToken({ url, token, serverPassword, timeout 
 }
 
 export function createLiveSocket(httpApi, connection, shard) {
-  const liveApi = new ScreepsHttpClient({ url: connection.url, token: connection.token || httpApi.token })
+  const liveApi = createHttpClient({
+    url: connection.url,
+    token: connection.token || httpApi.token,
+    serverPassword: connection.serverPassword
+  })
   liveApi.appConfig.defaultShard = shard
 
   // User-scoped subscriptions need the player ID. Resolve it with the stable
   // HTTP token instead of consuming the rotating live credential.
   liveApi.me = httpApi.me.bind(httpApi)
 
-  const connect = liveApi.socket.connect.bind(liveApi.socket)
-  liveApi.socket.connect = async () => {
-    // The upstream client has no public token setter. Reset its private token
-    // at this pinned compatibility seam before every initial connection or
-    // automatic reconnect; rotating socket tokens are deliberately not saved.
-    liveApi._token = connection.username && connection.password
-      ? await createSessionToken(connection)
-      : connection.token
-    await connect()
+  const socket = liveApi.socket
+  liveApi.appConfig.wsResubscribe = false
+  const connect = socket.connect.bind(socket)
+  const disconnect = socket.disconnect.bind(socket)
+  let credential = connection.token ? 'token' : 'password'
+  let reconnecting
+  let generation = 0
+
+  const abandonFailedConnection = () => {
+    if (socket.ws) {
+      socket.ws.removeAllListeners()
+      socket.ws.terminate()
+    }
+    socket.__authed = false
+    socket.__connected = false
   }
 
-  return liveApi.socket
+  socket.connect = async () => {
+    const token = credential === 'password'
+      ? await createSessionToken(connection)
+      : (connection.token || httpApi.token)
+    liveApi._token = token
+    try {
+      await connect()
+    } catch (error) {
+      abandonFailedConnection()
+      if (credential !== 'token' || !connection.username || !connection.password) throw error
+      credential = 'password'
+      liveApi._token = await createSessionToken(connection)
+      await connect()
+    }
+  }
+
+  // screeps-api 2.1.0 rejects after a successful reconnect and subscribes
+  // twice. Keep its connection/subscription machinery, but correct the retry
+  // loop at this compatibility seam until the dependency ships a fix.
+  socket.reconnect = () => {
+    if (reconnecting) return reconnecting
+    const attemptGeneration = generation
+    socket.__reconnecting = true
+    const pending = (async () => {
+      let lastError
+      for (let attempt = 0; attempt < liveApi.appConfig.wsReconnectMaxRetries; attempt++) {
+        const milliseconds = Math.min(
+          2 ** attempt * liveApi.appConfig.wsReconnectInitDelay,
+          liveApi.appConfig.wsReconnectMaxDelay
+        )
+        await delay(milliseconds)
+        if (generation !== attemptGeneration) return
+        try {
+          await socket.connect()
+          for (const eventSpec of Object.keys(socket.__subs)) socket.send(`subscribe ${eventSpec}`)
+          return
+        } catch (error) {
+          lastError = error
+        }
+      }
+      if (generation !== attemptGeneration) return
+      const error = new Error(
+        `Live connection failed after ${liveApi.appConfig.wsReconnectMaxRetries} retries.`,
+        { cause: lastError }
+      )
+      socket.emit('reconnectFailed', error)
+      throw error
+    })().finally(() => {
+      socket.__reconnecting = false
+      if (reconnecting === pending) reconnecting = undefined
+    })
+    reconnecting = pending
+    return pending
+  }
+
+  socket.disconnect = () => {
+    generation++
+    reconnecting = undefined
+    disconnect()
+  }
+
+  return socket
 }
 
 export async function createClient(options = {}) {
