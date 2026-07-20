@@ -1,7 +1,7 @@
 import { stderr, stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline/promises'
 import { assertGameAction, runGameExpression } from './action.js'
-import { createClient, output } from './client.js'
+import { createClient, output, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { readDocsManifest, readDocsPage } from './docs.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
@@ -126,7 +126,7 @@ async function empireOverview({ api, connection, shard }, options) {
       credits: me.money ?? 0
     },
     worldStatus: world.status,
-    rooms: rooms.rooms || [],
+    rooms: shardItems(rooms, shard),
     unreadMessages: unread.count || 0,
     attention
   }
@@ -288,17 +288,17 @@ async function inspectTarget(context, target, options) {
   return roomSnapshot(context.api, target.room, options, me._id)
 }
 
-async function defaultRoom(api, explicit) {
+async function defaultRoom(api, explicit, shard) {
   if (explicit) return roomName(explicit)
   const me = await api.authMe()
   const response = await api.userRooms(me._id)
-  const room = response.rooms?.[0]
+  const room = shardItems(response, shard)[0]
   if (!room) throw new Error('You have no room to use as a default.')
   return room
 }
 
 async function mapView(api, center, options) {
-  const room = await defaultRoom(api, center)
+  const room = await defaultRoom(api, center, options.shard)
   const radius = integer(options.radius, 'Radius', { min: 0, max: 20 })
   const rooms = roomsAround(room, radius)
   const response = await api.gameMapStats(rooms, 'owner0', options.shard)
@@ -314,7 +314,7 @@ async function watchRooms(api, targets, options) {
   let targetInfo = { kind: 'empire' }
   if (!targets.target) {
     const me = await api.authMe()
-    rooms.push(...((await api.userRooms(me._id)).rooms || []))
+    rooms.push(...shardItems(await api.userRooms(me._id), options.shard))
   } else {
     const parsed = parseTarget(targets.target, targets.position)
     if (parsed.kind === 'room' || parsed.kind === 'tile') {
@@ -564,7 +564,7 @@ export async function run(program, argv) {
         return
       }
       const [me, orders] = await Promise.all([api.authMe(), api.gameMarketMyOrders()])
-      const result = { credits: me.money || 0, orders: orders.list || [] }
+      const result = { credits: me.money || 0, orders: shardItems(orders, options.shard) }
       if (options.json) output(result, { json: true })
       else output(`${displayNumber(result.credits)} credits\n${formatMyOrders(orders)}`)
     }))

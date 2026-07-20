@@ -33,6 +33,21 @@ test('exchanges a rotating Screeps socket token', async t => {
   assert.equal(token, 'next-session')
 })
 
+test('preserves a private server URL path when opening its socket', async t => {
+  const server = new WebSocketServer({ port: 0 })
+  await new Promise(resolve => server.once('listening', resolve))
+  t.after(() => server.close())
+  server.on('connection', (socket, request) => {
+    assert.equal(request.url, '/screeps/socket/websocket')
+    socket.on('message', () => socket.send('auth ok'))
+  })
+  const address = server.address()
+  assert.equal(await exchangeSocketToken({
+    url: `http://127.0.0.1:${address.port}/screeps`,
+    token: 'session'
+  }), 'session')
+})
+
 test('returns null when a Screeps socket rejects a token', async t => {
   const server = new WebSocketServer({ port: 0 })
   await new Promise(resolve => server.once('listening', resolve))

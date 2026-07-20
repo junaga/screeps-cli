@@ -5,8 +5,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
-import { createClient } from '../src/client.js'
+import { createClient, shardItems } from '../src/client.js'
 import { writeConfig } from '../src/config.js'
+
+test('selects one shard or combines all shard results', () => {
+  const response = { shards: { shard0: ['W1N1'], shard3: ['E2S2'] } }
+  assert.deepEqual(shardItems(response, 'shard3'), ['E2S2'])
+  assert.deepEqual(shardItems(response), ['W1N1', 'E2S2'])
+  assert.deepEqual(shardItems(response, 'missing'), [])
+})
 
 test('creates a fresh live session without persisting its rotation', async t => {
   const directory = await mkdtemp(join(tmpdir(), 'screeps-client-test-'))

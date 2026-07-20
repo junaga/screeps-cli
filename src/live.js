@@ -2,7 +2,7 @@ import WebSocket from 'ws'
 import { ScreepsHttpClient } from 'screeps-api'
 
 function socketUrl(serverUrl) {
-  const url = new URL('socket/websocket', serverUrl)
+  const url = new URL('socket/websocket', `${serverUrl.replace(/\/$/, '')}/`)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   return url
 }

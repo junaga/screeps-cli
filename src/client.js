@@ -29,6 +29,11 @@ export async function createClient(options = {}) {
   return { api, connection, shard: options.shard || connection.shard }
 }
 
+export function shardItems(response, shard) {
+  const shards = response?.shards || {}
+  return shard ? shards[shard] || [] : Object.values(shards).flat()
+}
+
 export function output(value, options = {}) {
   if (options.ndjson) {
     process.stdout.write(`${JSON.stringify(value)}\n`)
