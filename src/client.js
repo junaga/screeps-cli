@@ -22,16 +22,29 @@ export async function createClient(options = {}) {
     password: connection.password
   })
   addServerPassword(api, connection.serverPassword)
-  api.appConfig.defaultShard = options.shard || connection.shard
+  let shard = options.shard || connection.shard
   if (!connection.token && connection.username && connection.password) await api.auth()
+  if (!shard && api.isOfficialServer) shard = await discoverShard(api)
+  api.appConfig.defaultShard = shard
 
-  api.socket = createLiveSocket(api, connection, options.shard || connection.shard)
-  return { api, connection, shard: options.shard || connection.shard }
+  api.socket = createLiveSocket(api, connection, shard)
+  return { api, connection, shard }
 }
 
 export function shardItems(response, shard) {
   const shards = response?.shards || {}
   return shard ? shards[shard] || [] : Object.values(shards).flat()
+}
+
+export async function discoverShard(api) {
+  const me = await api.authMe()
+  const { shards = {} } = await api.userRooms(me._id)
+  const occupied = Object.entries(shards).find(([, rooms]) => rooms.length)
+  if (occupied) return occupied[0]
+  const available = (await api.gameShardsInfo()).shards || []
+  const shard = available.toSorted((left, right) => right.users - left.users)[0]?.name
+  if (!shard) throw new Error('The server reported no available world shard.')
+  return shard
 }
 
 export function output(value, options = {}) {

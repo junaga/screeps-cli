@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
-import { createClient, shardItems } from '../src/client.js'
+import { createClient, discoverShard, shardItems } from '../src/client.js'
 import { writeConfig } from '../src/config.js'
 
 test('selects one shard or combines all shard results', () => {
@@ -13,6 +13,21 @@ test('selects one shard or combines all shard results', () => {
   assert.deepEqual(shardItems(response, 'shard3'), ['E2S2'])
   assert.deepEqual(shardItems(response), ['W1N1', 'E2S2'])
   assert.deepEqual(shardItems(response, 'missing'), [])
+})
+
+test('discovers an occupied shard, then falls back to the busiest shard', async () => {
+  const api = {
+    async authMe() { return { _id: 'me' } },
+    async userRooms() { return { shards: { shard0: [], shard2: ['E1S1'] } } },
+    async gameShardsInfo() { throw new Error('not needed') }
+  }
+  assert.equal(await discoverShard(api), 'shard2')
+
+  api.userRooms = async () => ({ shards: {} })
+  api.gameShardsInfo = async () => ({ shards: [
+    { name: 'shard0', users: 10 }, { name: 'shard3', users: 50 }
+  ] })
+  assert.equal(await discoverShard(api), 'shard3')
 })
 
 test('creates a fresh live session without persisting its rotation', async t => {
@@ -49,11 +64,13 @@ test('creates a fresh live session without persisting its rotation', async t => 
       username: 'player',
       password: 'account-secret',
       serverPassword: 'shared-secret',
-      token: 'persistent-http'
+      token: 'persistent-http',
+      shard: 'shard2'
     } }
   })
 
-  const { api } = await createClient()
+  const { api, shard } = await createClient()
+  assert.equal(shard, 'shard2')
   await api.socket.connect()
   api.socket.disconnect()
 

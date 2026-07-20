@@ -96,8 +96,9 @@ function inheritedOptions(command) {
 function withClient(action, clientOptions = {}) {
   return async (...args) => {
     const command = args.at(-1)
-    const options = inheritedOptions(command)
-    const context = await createClient({ ...options, ...clientOptions })
+    const suppliedOptions = inheritedOptions(command)
+    const context = await createClient({ ...suppliedOptions, ...clientOptions })
+    const options = { ...suppliedOptions, shard: context.shard }
     const operands = args.slice(0, command.registeredArguments.length)
     return action(context, ...operands, options, command)
   }
@@ -469,7 +470,7 @@ export async function run(program, argv) {
     .action(async (target, position, options) => {
       const parsed = parseTarget(target, position)
       const context = await createClient(options)
-      await inspectTarget(context, parsed, options)
+      await inspectTarget(context, parsed, { ...options, shard: context.shard })
     })
   program.helpInformation = () => `${TOP_HELP}\n`
 
