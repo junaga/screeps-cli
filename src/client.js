@@ -33,12 +33,13 @@ export async function createClient(options = {}) {
 
 export function shardItems(shards, shard) {
   shards ||= {}
-  return shard ? shards[shard] || [] : Object.values(shards).flat()
+  return shard ? shards[shard] || shards.privSrv || [] : Object.values(shards).flat()
 }
 
 export function marketItems(response, shard) {
   const orders = response?.shards || response || {}
-  const groups = shard ? [...new Set([shard, 'intershard'])] : Object.keys(orders)
+  const world = shard && !orders[shard] && orders.privSrv ? 'privSrv' : shard
+  const groups = world ? [...new Set([world, 'intershard'])] : Object.keys(orders)
   return groups.flatMap(group => Array.isArray(orders[group]) ? orders[group] : [])
 }
 
