@@ -52,14 +52,9 @@ async function findStoragePath(explicitPath) {
 
 async function readStorage(path) {
   const entries = await readdir(path, { withFileTypes: true })
-  const buffers = []
-  for (const entry of entries) {
-    if (!entry.isFile() || entry.name === 'LOCK') continue
-    try {
-      buffers.push(await readFile(join(path, entry.name)))
-    } catch {}
-  }
-  return buffers
+  return (await Promise.all(entries
+    .filter(entry => entry.isFile() && entry.name !== 'LOCK')
+    .map(entry => readFile(join(path, entry.name)).catch(() => null)))).filter(Boolean)
 }
 
 const request = (connection, method, path, params) => createHttpClient(connection).req(method, path, params)
