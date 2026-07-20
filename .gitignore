@@ -13,6 +13,3 @@ __MACOSX/
 node_modules/
 .wrangler/
 coverage/
-
-# screeps
-.screeps.json
