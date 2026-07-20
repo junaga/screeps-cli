@@ -116,13 +116,45 @@ function protectCode(markdown) {
     outsideFences.push(token(lines.slice(index, end).join('')))
     index = end
   }
-  const protectedMarkdown = outsideFences.join('').replace(/(`+)([^`\n]*?)\1/g, token)
+  const protectedMarkdown = protectInlineCode(outsideFences.join(''), token)
   return {
     markdown: protectedMarkdown,
     restore(value) {
       return value.replace(/\uE000SCREEPS_DOCS_CODE_(\d+)\uE001/g, (_match, index) => values[Number(index)])
     }
   }
+}
+
+function protectInlineCode(markdown, token) {
+  let protectedMarkdown = ''
+  let index = 0
+  while (index < markdown.length) {
+    if (markdown[index] !== '`') {
+      protectedMarkdown += markdown[index++]
+      continue
+    }
+    let openingEnd = index
+    while (markdown[openingEnd] === '`') openingEnd++
+    const width = openingEnd - index
+    let closingStart = openingEnd
+    while (closingStart < markdown.length) {
+      closingStart = markdown.indexOf('`', closingStart)
+      if (closingStart < 0) break
+      let closingEnd = closingStart
+      while (markdown[closingEnd] === '`') closingEnd++
+      if (closingEnd - closingStart === width) break
+      closingStart = closingEnd
+    }
+    if (closingStart < 0) {
+      protectedMarkdown += markdown.slice(index, openingEnd)
+      index = openingEnd
+      continue
+    }
+    const closingEnd = closingStart + width
+    protectedMarkdown += token(markdown.slice(index, closingEnd))
+    index = closingEnd
+  }
+  return protectedMarkdown
 }
 
 function attribute(tag, name) {

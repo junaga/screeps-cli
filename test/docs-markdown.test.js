@@ -77,6 +77,7 @@ test('transcodes presentation HTML without touching literal code examples', () =
     'Set <code style="white-space:nowrap">ptr: true</code>.<br>Then continue &mdash; carefully.',
     '<img src="map.png" alt="Map" align="right">Description.',
     'Use an `<iframe>` element.',
+    'Keep ``<strong>literal</strong> and `nested` `` intact.',
     '```html',
     '<table><tr><td>This is example code, not a table.</td></tr></table>',
     '```'
@@ -92,6 +93,7 @@ test('transcodes presentation HTML without touching literal code examples', () =
     '',
     'Description.',
     'Use an `<iframe>` element.',
+    'Keep ``<strong>literal</strong> and `nested` `` intact.',
     '```html',
     '<table><tr><td>This is example code, not a table.</td></tr></table>',
     '```'
