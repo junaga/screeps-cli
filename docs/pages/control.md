@@ -9,17 +9,17 @@ To expand your empire in the game world, you need to develop your main game indi
 
 Your current Global Control Level is displayed at your [overview page](https://screeps.com/a/#!/overview).
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/gcl-cpu.png)
+![](https://docs.screeps.com/img/gcl-cpu.png)
 
 ## Room Controller Level
 
 In order to build any facilities in a room, you need to control it. In the majority of rooms (but not all), there are special objects called **Room Controllers**. In your first room, the Controller is owned by you by default. Any neutral Controller can be [claimed](https://docs.screeps.com/api/#Creep.claimController) by your creeps with the `CLAIM` body part, which instantly puts the room under your control.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/c1.png)
+![](https://docs.screeps.com/img/c1.png)
 
 A newly-seized Controller allows you to build one spawn in the room. In order for you to build extra spawns, roads, and extensions, you have to upgrade the Room Controller Level (RCL) by pumping energy into the controller using [`Creep.upgradeController`](https://docs.screeps.com/api/#Creep.upgradeController) method.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/c2.png)
+![](https://docs.screeps.com/img/c2.png)
 
 ## Available structures per RCL
 
@@ -41,7 +41,7 @@ A Controller cannot be damaged or destroyed. However, a Controller not affected 
 
 You can attack another player's controller downgrade timer by applying [`attackController`](https://docs.screeps.com/api/#Creep.attackController) on it.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/controllerDowngrade.png)
+![](https://docs.screeps.com/img/controllerDowngrade.png)
 
 ## Raising GCL
 

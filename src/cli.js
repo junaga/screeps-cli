@@ -437,26 +437,15 @@ async function liveConsole(api, expression, options) {
   await waitForInterrupt(api.socket)
 }
 
-async function docsView(manifest, topic, options) {
+async function docsView(manifest, topic, options, command) {
   if (!topic) {
-    const landing = {
-      read: 'screeps docs creeps',
-      topics: 'screeps docs --help'
-    }
-    const metadata = {
-      offline: true,
+    if (options.json) output({
       builtAt: manifest.builtAt,
       revision: manifest.revision,
-      officialDocs: manifest.site
-    }
-    if (options.json) output({ ...metadata, ...landing }, { json: true })
-    else output([
-      `Offline docs built ${manifest.builtAt} · screeps/docs ${manifest.revision.slice(0, 7)}`,
-      `Official docs: ${manifest.site}`,
-      '',
-      `Read a guide:    ${landing.read}`,
-      `List all topics: ${landing.topics}`
-    ].join('\n'))
+      officialDocs: manifest.site,
+      topics: manifest.pages.map(({ command, title }) => ({ command, title }))
+    }, { json: true })
+    else command.outputHelp()
     return
   }
   const exact = manifest.pages.find(page => page.command === topic.toLowerCase())
@@ -691,10 +680,10 @@ export async function run(program, argv) {
       else output(`Sent message to @${username}.`)
     }))
 
-  program.command('docs [topic]')
+  const docs = program.command('docs [topic]')
     .description('read the bundled game documentation')
-    .addHelpText('after', `\nTopics:\n${docsManifest.pages.map(page => `  ${page.command.padEnd(22)} ${page.title}`).join('\n')}`)
-    .action(async (topic, _options, command) => docsView(docsManifest, topic, inheritedOptions(command)))
+    .addHelpText('after', `\nOffline snapshot: ${docsManifest.builtAt} · screeps/docs ${docsManifest.revision.slice(0, 7)}\nOfficial docs:    ${docsManifest.site}\n\nTopics:\n${docsManifest.pages.map(page => `  ${page.command.padEnd(22)} ${page.title}`).join('\n')}`)
+    .action(async (topic, _options, command) => docsView(docsManifest, topic, inheritedOptions(command), command))
 
   program.command('login [server]')
     .description('connect and remember a Screeps server')

@@ -49,10 +49,8 @@ test('turns collapsible table controls into contextual Markdown headings', () =>
   ].join('\n'))
 })
 
-test('pins relative docs links and media to the source revision', () => {
+test('resolves relative docs links and media to the production site', () => {
   const options = {
-    repository: 'https://github.com/screeps/docs.git',
-    revision: 'abc123',
     site: 'https://docs.screeps.com/',
     source: 'guides/example.md'
   }
@@ -64,10 +62,10 @@ test('pins relative docs links and media to the source revision', () => {
     '<video><source src="../img/demo.mp4"></video>'
   ].join('\n')
   assert.equal(absolutizeDocsLinks(markdown, options), [
-    '![map](https://raw.githubusercontent.com/screeps/docs/abc123/source/img/map.png)',
-    '[guide](https://github.com/screeps/docs/blob/abc123/source/control.md#raising-gcl)',
+    '![map](https://docs.screeps.com/img/map.png)',
+    '[guide](https://docs.screeps.com/control.html#Raising-GCL)',
     '[API](https://docs.screeps.com/api/#Game)',
     '![](https://static.screeps.com/icon.png)',
-    '<video><source src="https://raw.githubusercontent.com/screeps/docs/abc123/source/img/demo.mp4"></video>'
+    '<video><source src="https://docs.screeps.com/img/demo.mp4"></video>'
   ].join('\n'))
 })

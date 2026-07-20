@@ -3,7 +3,7 @@ import { cp, mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/pr
 import { tmpdir } from 'node:os'
 import { basename, extname, join, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
-import { DOCS_REPOSITORY, DOCS_REVISION, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
+import { DOCS_REPOSITORY, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
 import { absolutizeDocsLinks, transcodeHtmlTables } from './docs-markdown.js'
 
 const run = promisify(execFile)
@@ -67,8 +67,6 @@ function readPage(contents, powers, source) {
     .trim()
   body = transcodeHtmlTables(body)
   body = absolutizeDocsLinks(body, {
-    repository: DOCS_REPOSITORY,
-    revision: DOCS_REVISION,
     site: DOCS_SITE,
     source
   })
@@ -83,8 +81,9 @@ async function main() {
     await mkdir(repository)
     await run('git', ['init', '--quiet', repository])
     await run('git', ['-C', repository, 'remote', 'add', 'origin', DOCS_REPOSITORY])
-    await run('git', ['-C', repository, 'fetch', '--quiet', '--depth=1', 'origin', DOCS_REVISION])
+    await run('git', ['-C', repository, 'fetch', '--quiet', '--depth=1', 'origin', 'HEAD'])
     await run('git', ['-C', repository, 'checkout', '--quiet', '--detach', 'FETCH_HEAD'])
+    const revision = (await run('git', ['-C', repository, 'rev-parse', 'HEAD'])).stdout.trim()
 
     const sourceDirectory = join(repository, 'source')
     const powers = await renderPowers(repository, temporary)
@@ -106,7 +105,7 @@ async function main() {
       gameProtocol: GAME_PROTOCOL,
       site: DOCS_SITE,
       repository: DOCS_REPOSITORY,
-      revision: DOCS_REVISION,
+      revision,
       builtAt: new Date().toISOString().slice(0, 10),
       pages
     }

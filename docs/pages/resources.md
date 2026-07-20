@@ -27,21 +27,21 @@ Working with minerals consists of 3 steps:
 
 There are 7 types of base minerals shown in the picture below.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/minerals-01.png)
+![](https://docs.screeps.com/img/minerals-01.png)
 
 Each room contains only one mineral type, so in order to handle them effectively you need either access to several suitable rooms or trade relationships with other players.
 
-<img src="https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/mining_minerals.png" align="right">A mineral deposit is located in a room at a spot marked by a special symbol. To start mining the deposit, you need to construct the special structure [**Extractor**](https://docs.screeps.com/api/#StructureExtractor) on top of it (available at Room Controller Level 6). Upon building it, you can start applying the method [`harvest`](https://docs.screeps.com/api/#Creep.harvest) to the deposit thus mining the corresponding mineral in the same way you harvest energy.
+<img src="https://docs.screeps.com/img/mining_minerals.png" align="right">A mineral deposit is located in a room at a spot marked by a special symbol. To start mining the deposit, you need to construct the special structure [**Extractor**](https://docs.screeps.com/api/#StructureExtractor) on top of it (available at Room Controller Level 6). Upon building it, you can start applying the method [`harvest`](https://docs.screeps.com/api/#Creep.harvest) to the deposit thus mining the corresponding mineral in the same way you harvest energy.
 
 ### Mineral compounds
 
 Base minerals are useless on their own. In order to impart some useful capabilities to them, you have to combine them according to special formulas in the structure called [**Lab**](https://docs.screeps.com/api/#StructureLab).
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/minerals-02.png)
+![](https://docs.screeps.com/img/minerals-02.png)
 
 One reaction requires three labs: two as reagent sources, and the third one as the produce collector. The labs should be within the range of 2 squares from each other. One lab cannot contain more than one mineral type at the same time.
 
-<img src="https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/2016-03-09_10-32-33.gif" align="right">
+<img src="https://docs.screeps.com/img/2016-03-09_10-32-33.gif" align="right">
 
     var labs = room.find(FIND_MY_STRUCTURES,
         {filter: {structureType: STRUCTURE_LAB}});
@@ -120,7 +120,7 @@ You harvest raw commodities from a [`Deposit`](https://docs.screeps.com/api/#Dep
 There are 4 types of raw resources: Metal, Silicon, Biomass, Mist.
 They are distributed unevenly across the world map: one resource type per map quadrant (NW, NE, SW, SE).
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities.png)
+![](https://docs.screeps.com/img/commodities.png)
 
 Unlike minerals, these deposits exhaust as you harvest them: the more you harvest, the longer cooldown becomes.
 They vanish when you stop harvesting it after some time, and reappear elsewhere nearby.
@@ -136,7 +136,7 @@ They also can be used to store resources in a "compressed" form.
 
 #### Compressing commodities
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities1.png)
+![](https://docs.screeps.com/img/commodities1.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -154,7 +154,7 @@ They also can be used to store resources in a "compressed" form.
 
 #### Decompressing commodities
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities2.png)
+![](https://docs.screeps.com/img/commodities2.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -172,7 +172,7 @@ They also can be used to store resources in a "compressed" form.
 
 #### Basic regional commodities
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities3.png)
+![](https://docs.screeps.com/img/commodities3.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -185,7 +185,7 @@ All commodities above can be produced in a factory of any level.
 
 ### Higher commodities
 
-The full use of factories is possible with [Operators](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/power.md#power-creeps) only, and their `OPERATE_FACTORY` power.
+The full use of factories is possible with [Operators](https://docs.screeps.com/power.html#Power-Creeps) only, and their `OPERATE_FACTORY` power.
 When an Operator uses this power on a factory without a level, the level of the factory is permanently set to the level of the power, and the same effect is applied on the factory.
 It enables the factory to produce commodities of the corresponding level.
 The factory can only produce commodities of exactly the same level, or "any level" commodities.
@@ -200,7 +200,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Common higher commodities
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities4.png)
+![](https://docs.screeps.com/img/commodities4.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -210,7 +210,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Mechanical chain
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities5.png)
+![](https://docs.screeps.com/img/commodities5.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -222,7 +222,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Biological chain
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities6.png)
+![](https://docs.screeps.com/img/commodities6.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -234,7 +234,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Electronical chain
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities7.png)
+![](https://docs.screeps.com/img/commodities7.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -246,7 +246,7 @@ These commodities have the most lucrative prices on the market.
 
 #### Mystical chain
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/commodities8.png)
+![](https://docs.screeps.com/img/commodities8.png)
 
 | Product | Factory | Components | Cooldown |
 | --- | --- | --- | --- |
@@ -262,4 +262,4 @@ These commodities have the most lucrative prices on the market.
 **How to get:** destroy the structure and loot the dropped resource. <br>
 **Needed for:** creating Power Creeps.
 
-See this article for more info: [Power](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/power.md).
+See this article for more info: [Power](https://docs.screeps.com/power.html).

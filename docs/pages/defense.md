@@ -6,7 +6,7 @@ The world of Screeps is not the safest place on earth. This article explains the
 
 When you start out in the game, you have **Safe Mode** turned on in your room. It means that no other creep will be able to use any methods in this room that can affect your creeps of objects (but you’ll still be able to defend against strangers). See more about that in the description of [`StructureController`](https://docs.screeps.com/api/#StructureController)
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/safe_mode.png)
+![](https://docs.screeps.com/img/safe_mode.png)
 
 Safe mode lasts for **20,000 game ticks** (approx. 20 hours depending on the tick duration). However, if the room controller has extra available activations, you can turn on safe mode again using the method [`StructureController.activateSafeMode`](https://docs.screeps.com/api/#StructureController.activateSafeMode):
 
@@ -20,7 +20,7 @@ Safe mode is a defense tactic of last resort, when everything else has failed. B
 
 The most easy and trivial way to defend your room is to build the same **walls** that you may have noticed surrounding a novice zone during the initial grace period. There is a difference though: while the initial walls were right on doorways blocking outside creeps, your new walls may be built not closer than 2 squares to the room edges, and hostile creeps will still be able to enter the room and destroy your fortifications. This is why it's crucial not to just build, but also **fortify** your walls in such a way that it takes your opponents much time to destroy them.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/defense1.png)
+![](https://docs.screeps.com/img/defense1.png)
 
 After a wall is built, its square has only **1 hit point**. So if you want the wall to cause any trouble to the attackers for at least several hours (or even days), you should fortify it with the help of workers and the [`repair`](https://docs.screeps.com/api/#Creep.repair) action. The maximum number of hits you can repair the wall to is **300,000,000 hits**. If you spend much resources, such a wall can withstand attacks for many days. And it is just a single square, while you can build multiple rows of walls!
 
@@ -30,9 +30,9 @@ However, walls have a considerable disadvantage: they block not only hostile cre
 
 This is why you have another passive defense means – **ramparts**. They behave like walls for hostile creeps by blocking their movements, while your creeps can freely pass through them. Furthermore, a creep on a rampart square is completely invulnerable to any kind of attack until the rampart is destroyed. Being protected, it can still attack opponents.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/defense2.png)
+![](https://docs.screeps.com/img/defense2.png)
 
-In the same way as walls, ramparts are built with **1 hit point** initially and need to be fortified to a needed level by workers afterwards. The maximum amount of rampart hits depends on the **Room Controller level**. See more about that in the article [Control](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/control.md).
+In the same way as walls, ramparts are built with **1 hit point** initially and need to be fortified to a needed level by workers afterwards. The maximum amount of rampart hits depends on the **Room Controller level**. See more about that in the article [Control](https://docs.screeps.com/control.html).
 
 A rampart has another peculiarity: its superior defense abilities must be constantly maintained at a proper level. Every few ticks, a rampart loses a few hit points, so you should assign a worker to make sure that all your ramparts stand alert and don't wear off.
 
@@ -40,7 +40,7 @@ A rampart has another peculiarity: its superior defense abilities must be consta
 
 While well-designed passive defenses may withstand attacks for many days (for example, while you are offline and out of the game), they will inevitably fall sometime. This is why it's utterly important not to rely on fortifications alone but install defense systems to repel opponents when needed.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/defense3.png)
+![](https://docs.screeps.com/img/defense3.png)
 
 You сan use **towers** for active defense which are available to build starting from room level 3. Unlike walls and ramparts, this defense means is active because using it requires you to spend energy by calling a tower's attack function. It can [`attack`](https://docs.screeps.com/api/#StructureTower.attack) and [`heal`](https://docs.screeps.com/api/#StructureTower.heal) creeps as well as [`repair`](https://docs.screeps.com/api/#StructureTower.repair) structures (for example broken walls and ramparts).
 
@@ -65,12 +65,12 @@ Here is an example of a simple code to attack enemy creeps using towers in a roo
 
 While towers are a handy method of active defense, it’s not an ultimate panacea against any offense. A well-secured team of creep invaders are able to withstand the attack by multiple towers at point-blank range. Countering such an attack requires a symmetrical response: creep defenders.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/defense4.png)
+![](https://docs.screeps.com/img/defense4.png)
 
 Since ramparts have an ability to protect everything on the same square from any damage, develop your defense system in such a way that any attacked square adjoins a creep defender covered by a rampart. But note that building them continuously, even in peacetime, is a waste of resources. It’s better to construct them quickly during a siege.
 
 Writing AI logic for such creeps is quite complicated, but it’s the only way to protect your rooms against virtually any encroachment.
 
-You can spawn [NPC invader creeps](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/invaders.md) in your room in order to test your defences.
+You can spawn [NPC invader creeps](https://docs.screeps.com/invaders.html) in your room in order to test your defences.
 
 Therefore, designing good fortification system with proper behaviour logic will make your room a very difficult target for invaders. However, never rest on your laurels by hunkering down in your rooms. As we know, the best defense is offense.

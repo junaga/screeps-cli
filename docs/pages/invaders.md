@@ -2,7 +2,7 @@
 
 Every room where energy is mined has an inner counter at approximately **100,000 units of mined energy** (plus some random variable). After this counter times out, a new game-controlled creep appears at one of the room exits with the goal of hunting your creeps. It will not touch your structures most of the time, but if a structure gets on its way, it will try to destroy it. This creep can use [`attack`](https://docs.screeps.com/api/#Creep.attack), [`rangedAttack`](https://docs.screeps.com/api/#Creep.rangedAttack), and [`dismantle`](https://docs.screeps.com/api/#Creep.dismantle). It is unable to move between rooms.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/invader.png)
+![](https://docs.screeps.com/img/invader.png)
 
 An important feature of these creeps is that they can appear only at **exits to neutral rooms**. If the target room is under your (or someone else’s) control or it is a reserved room, an invader creep will never appear at this exit. If all exits in the room are of this kind, invaders cannot appear at all.
 
@@ -21,15 +21,15 @@ There are two sizes of invader creeps:
 
 |  | RCL < 4 | RCL ≥ 4 |
 | --- | --- | --- |
-| Melee | ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/smallMelee.png) | ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/bigMelee.png) |
-| Ranged | ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/smallRanged.png) | ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/bigRanged.png) |
-| Healer | ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/smallHealer.png) | ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/bigHealer.png) |
+| Melee | ![](https://docs.screeps.com/img/smallMelee.png) | ![](https://docs.screeps.com/img/bigMelee.png) |
+| Ranged | ![](https://docs.screeps.com/img/smallRanged.png) | ![](https://docs.screeps.com/img/bigRanged.png) |
+| Healer | ![](https://docs.screeps.com/img/smallHealer.png) | ![](https://docs.screeps.com/img/bigHealer.png) |
 
 ## Testing
 
 Note that you can use "Invasion" controls in the room side panel in order to create NPC invaders manually and test your defences.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/chrome_2016-11-24_14-55-59.png)
+![](https://docs.screeps.com/img/chrome_2016-11-24_14-55-59.png)
 
 ## Strongholds
 
@@ -42,15 +42,15 @@ If you destroy the stronghold, its ruins will remain with the same effect timer 
 There are many stronghold types. Each type has different structures layout and defenders AI.
 You can estimate stronghold's difficulty by checking the `level` property on the [`StructureInvaderCore`](https://docs.screeps.com/api/#StructureInvaderCore).
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold1.png) ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold5.png)
+![](https://docs.screeps.com/img/stronghold1.png) ![](https://docs.screeps.com/img/stronghold5.png)
 
 There is one more reason to conquer an NPC Stronghold &mdash; it contains resources in its treasury.
 Every stronghold has a few containers, and the core structure ruin also will contain resources after you destroy it.
 Here is an example of a level 5 stronghold loot:
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold_loot5.png) ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold_loot1.png) ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold_loot2.png) ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold_loot3.png) ![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/stronghold_loot4.png)
+![](https://docs.screeps.com/img/stronghold_loot5.png) ![](https://docs.screeps.com/img/stronghold_loot1.png) ![](https://docs.screeps.com/img/stronghold_loot2.png) ![](https://docs.screeps.com/img/stronghold_loot3.png) ![](https://docs.screeps.com/img/stronghold_loot4.png)
 
 An active NPC Stronghold not only spawns invader creeps in the sector but also spawns lesser cores in neutral (even reserved) rooms of the sector every few thousands of ticks.
 Such cores will not have any structures or creeps, but will reserve the controller so that you cannot harvest energy in this room without destroying the core first.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/invader-core-expand.gif)
+![](https://docs.screeps.com/img/invader-core-expand.gif)

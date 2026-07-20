@@ -26,24 +26,17 @@ test('docs help lists every bundled guide without an API reference', () => {
   assert.match(removed.stderr, /unknown option '--search'/)
 })
 
-test('bare docs is a concise landing page rather than the full topic catalog', () => {
+test('bare docs and docs help show the same topic catalog', () => {
   const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs'], { encoding: 'utf8' })
+  const help = spawnSync(process.execPath, ['bin/screeps.js', 'docs', '--help'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
-  assert.match(result.stdout, /Offline docs built \d{4}-\d{2}-\d{2}/)
+  assert.equal(result.stdout, help.stdout)
+  assert.match(result.stdout, /Offline snapshot: \d{4}-\d{2}-\d{2}/)
   assert.match(result.stdout, /https:\/\/docs\.screeps\.com\//)
-  assert.match(result.stdout, /screeps docs creeps/)
-  assert.match(result.stdout, /screeps docs --help/)
-  assert.doesNotMatch(result.stdout, /advanced-grunt/)
+  assert.match(result.stdout, /advanced-grunt/)
 
   const json = spawnSync(process.execPath, ['bin/screeps.js', '--json', 'docs'], { encoding: 'utf8' })
-  assert.deepEqual(JSON.parse(json.stdout), {
-    offline: true,
-    builtAt: '2026-07-20',
-    revision: 'c7cb981eba13bd6c3c4a3ea274851326d74a506f',
-    officialDocs: 'https://docs.screeps.com/',
-    read: 'screeps docs creeps',
-    topics: 'screeps docs --help'
-  })
+  assert.equal(JSON.parse(json.stdout).topics.length > 25, true)
 })
 
 test('market help exposes every action and explicit terminal context', () => {

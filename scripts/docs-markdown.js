@@ -138,10 +138,9 @@ export function transcodeHtmlTables(markdown) {
     .replace(/\n{3,}/g, '\n\n')
 }
 
-function immutableTarget(target, options, media = false) {
+function productionTarget(target, options) {
   if (/^[a-z][a-z\d+.-]*:/i.test(target)) return target
   if (target.startsWith('//')) return `https:${target}`
-  if (target.startsWith('/api')) return `${options.site.replace(/\/$/, '')}${target}`
 
   const suffixAt = target.search(/[?#]/)
   const path = suffixAt < 0 ? target : target.slice(0, suffixAt)
@@ -149,23 +148,15 @@ function immutableTarget(target, options, media = false) {
   const sourcePath = path
     ? normalize(path.startsWith('/') ? path.slice(1) : join(dirname(options.source), path))
     : options.source
-  const repositoryPath = sourcePath.replace(/\.html$/i, '.md')
-  const repositorySuffix = repositoryPath.endsWith('.md') && suffix.startsWith('#') ? suffix.toLowerCase() : suffix
-  const repository = options.repository.replace(/\.git$/, '').replace(/\/$/, '')
-  const githubPath = repository.replace(/^https:\/\/github\.com\//, '')
-  const base = media
-    ? `https://raw.githubusercontent.com/${githubPath}/${options.revision}/source/`
-    : `${repository}/blob/${options.revision}/source/`
-  return `${base}${repositoryPath}${repositorySuffix}`
+  const publicPath = sourcePath.replace(/\.md$/i, '.html')
+  return new URL(`${publicPath}${suffix}`, options.site).href
 }
 
 export function absolutizeDocsLinks(markdown, options) {
-  const linked = markdown.replace(/(!?\[[^\]]*\]\()([^)]+)(\))/g, (match, opening, target, closing) => {
-    const media = opening.startsWith('!')
-    return `${opening}${immutableTarget(target, options, media)}${closing}`
-  })
+  const linked = markdown.replace(/(!?\[[^\]]*\]\()([^)]+)(\))/g,
+    (match, opening, target, closing) => `${opening}${productionTarget(target, options)}${closing}`)
   return linked.replace(/<(?:a|img|source)\b[^>]*>/gi, tag => tag.replace(
     /(\b(?:href|src)\s*=\s*["'])([^"']+)(["'])/gi,
-    (attribute, opening, target, closing) => `${opening}${immutableTarget(target, options, /\bsrc\s*=/i.test(opening))}${closing}`
+    (attribute, opening, target, closing) => `${opening}${productionTarget(target, options)}${closing}`
   ))
 }

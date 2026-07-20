@@ -10,7 +10,7 @@ Power is an end-game mechanic opening a whole new trek in the development of you
 
 ## Power Banks
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/power_banks.gif)
+![](https://docs.screeps.com/img/power_banks.gif)
 
 Power can be gathered from structures called [Power Banks](https://docs.screeps.com/api/#StructurePowerBank) that appear from time to time in neutral empty rooms that divide living sectors on the map. Each Power Bank contains a random amount of power that can be obtained by destroying the structure. Due to the high-energy nature of these structures, 50% of damage applied to them bounce back to the attacking creep, so take care to have healers in your team.
 
@@ -18,7 +18,7 @@ You can also buy power from market, either from NPC traders or other players.
 
 ## Global Power Level
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/gpl.png)
+![](https://docs.screeps.com/img/gpl.png)
 
 An 8-level room gives access to the structure called [Power Spawn](https://docs.screeps.com/api/#StructurePowerSpawn). It allows to execute the method [`StructurePowerSpawn.processPower`](https://docs.screeps.com/api/#StructurePowerSpawn.processPower). By merging 1 unit of power resource with 50 units of energy, you can increase your **Global Power Level** progress. On reaching a new GPL level, you unlock the possibility to use it to develop your **Power Creeps**.
 
@@ -27,7 +27,7 @@ You can view your GPL on the [Overview page](https://screeps.com/a/#!/overview) 
 ## Power Creeps
 
 <video autoplay loop muted playsinline>
-    <source src="https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/pc_anim.mp4" type="video/mp4">
+    <source src="https://docs.screeps.com/img/pc_anim.mp4" type="video/mp4">
 </video>
 
 [Power Creeps](https://docs.screeps.com/api/#PowerCreep) (PC) are game units different from regular creeps in the same way as hero units are different from regular ones in strategy games.

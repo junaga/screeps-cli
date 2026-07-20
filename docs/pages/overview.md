@@ -10,7 +10,7 @@ Learn game basics step by step in our interactive tutorial
 
 Reference of all game objects, methods and prototypes
 
-## [Contributed articles](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/contributed/rules.md)
+## [Contributed articles](https://docs.screeps.com/contributed/rules.html)
 
 Read articles written by other players, or contribute your own
 

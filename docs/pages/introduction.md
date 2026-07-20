@@ -10,7 +10,7 @@ Screeps is developed for people with **programming skills**. Unlike some other R
 
 The game world consists of interconnected **rooms**. A room is a closed space 50x50 cells in size. It may have from 1 to 4 exits to other rooms. The world is separated into **shards** which are connected by intershard portals. You can consider shards a Z-axis of the world.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/shards.png)
+![](https://docs.screeps.com/img/shards.png)
 
 Each room landscape is unique. The view of each room is generated procedurally and consists of three types of surface:
 
@@ -28,7 +28,7 @@ In the beginning of the game, you are free to choose the place for your new colo
 
 ## Your colony
 
-**![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/colony-center.png)**
+**![](https://docs.screeps.com/img/colony-center.png)**
 
 **Energy sources** are the main game resource. They can be harvested by worker creeps. The amount of energy in a source is limited, but resumes once in 300 game ticks.
 

@@ -8,7 +8,7 @@ The regular web browser client uses Google Invisible reCAPTCHA to validate some 
 
 You can generate an auth token in your [account settings](https://screeps.com/a/#!/account/auth-tokens):
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/auth_tokens.png)
+![](https://docs.screeps.com/img/auth_tokens.png)
 
 A token with **full access** will have the same access scope as your usual authentication credentials. You can also limit the access scope to **selected endpoints**, **websockets events** and **memory segments**.
 
@@ -75,7 +75,7 @@ There are two levels of rate limiting: global and per-endpoint, shown in the tab
 
 If you develop a third-party tool that requires human interaction, you can integrate a special flow to turn off rate limiting on a specific token. In order to do so, you must provide the user with a link `https://screeps.com/a/#!/account/auth-tokens/noratelimit?token=XXX`, which they should navigate to. When the user clicks the "Proceed" button on the page, the token will be granted with a 2-hour period with no rate limits.
 
-![](https://raw.githubusercontent.com/screeps/docs/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/img/token-noratelimit.png)
+![](https://docs.screeps.com/img/token-noratelimit.png)
 
 If your tool is web-based, you can embed this page in an `<iframe>` and listen to a `screepsTokenSuccess` message:
 

@@ -8,18 +8,18 @@ Caching is, at it's core, a simple concept- by saving the results of expensive c
 
 ### Memory
 
-The most common place to store cached data is in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object). This is the only option for true persistance- anything stored in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object) is going to stay there until removed, so if a value is extremely expensive or must be saved this is the place to put it.
+The most common place to store cached data is in [Memory](https://docs.screeps.com/global-objects.html#Memory-object). This is the only option for true persistance- anything stored in [Memory](https://docs.screeps.com/global-objects.html#Memory-object) is going to stay there until removed, so if a value is extremely expensive or must be saved this is the place to put it.
 
-There are two major drawbacks with [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object)
+There are two major drawbacks with [Memory](https://docs.screeps.com/global-objects.html#Memory-object)
 
-*   Space in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object) is limited to 2048kb of space.
-*   JSON.parse is run on the [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object) string each tick it is accessed, which is more expensive the more data that is stored.
+*   Space in [Memory](https://docs.screeps.com/global-objects.html#Memory-object) is limited to 2048kb of space.
+*   JSON.parse is run on the [Memory](https://docs.screeps.com/global-objects.html#Memory-object) string each tick it is accessed, which is more expensive the more data that is stored.
 
-For these reasons it makes sense to limit what is placed in [Memory](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/global-objects.md#memory-object).
+For these reasons it makes sense to limit what is placed in [Memory](https://docs.screeps.com/global-objects.html#Memory-object).
 
 ### Global
 
-The [game loop](https://github.com/screeps/docs/blob/c7cb981eba13bd6c3c4a3ea274851326d74a506f/source/game-loop.md) architecture allows you to define a "loop" function which gets run each tick. Additionally it allows you to define expensive one-time-run code in the outer scope. This is most commonly used to `require` modules-
+The [game loop](https://docs.screeps.com/game-loop.html) architecture allows you to define a "loop" function which gets run each tick. Additionally it allows you to define expensive one-time-run code in the outer scope. This is most commonly used to `require` modules-
 
     // executed on new global
     var mod = require('mod');
