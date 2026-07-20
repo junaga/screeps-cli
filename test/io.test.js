@@ -10,7 +10,9 @@ test('round-trips nested JavaScript and WASM modules', async t => {
   t.after(() => rm(directory, { recursive: true, force: true }))
   const modules = {
     main: 'module.exports.loop = () => {}',
+    '.hidden': 'module.exports = true',
     'roles/worker': 'module.exports = {}',
+    '.roles/scout': 'module.exports = {}',
     engine: { binary: Buffer.from('wasm').toString('base64') }
   }
 

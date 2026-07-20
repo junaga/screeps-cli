@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { glob, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, extname, relative, resolve, sep } from 'node:path'
 
 export function parseValue(value) {
@@ -10,22 +10,14 @@ export async function readModules(directory) {
   const root = resolve(directory)
   const modules = {}
 
-  async function visit(path) {
-    for (const entry of await readdir(path, { withFileTypes: true })) {
-      const entryPath = resolve(path, entry.name)
-      if (entry.isDirectory()) {
-        await visit(entryPath)
-        continue
-      }
-      const extension = extname(entry.name)
-      if (!entry.isFile() || !['.js', '.wasm'].includes(extension)) continue
-      const name = relative(root, entryPath).slice(0, -extension.length).split(sep).join('/')
-      const content = await readFile(entryPath)
-      modules[name] = extension === '.wasm' ? { binary: content.toString('base64') } : content.toString('utf8')
-    }
+  for await (const entry of glob('{**/*,**/.*,**/.*/**/*}.{js,wasm}', { cwd: root, withFileTypes: true })) {
+    if (!entry.isFile()) continue
+    const extension = extname(entry.name)
+    const path = resolve(entry.parentPath, entry.name)
+    const name = relative(root, path).slice(0, -extension.length).split(sep).join('/')
+    const content = await readFile(path)
+    modules[name] = extension === '.wasm' ? { binary: content.toString('base64') } : content.toString('utf8')
   }
-
-  await visit(root)
   if (!Object.keys(modules).length) throw new Error(`No .js or .wasm modules found in ${directory}`)
   return modules
 }
