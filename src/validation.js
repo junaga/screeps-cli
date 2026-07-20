@@ -8,7 +8,6 @@ export function integer(value, label, { min, max } = {}) {
 }
 
 export const coordinate = value => integer(value, 'Coordinate', { min: 0, max: 49 })
-export const flagColor = value => integer(value, 'Flag color', { min: 1, max: 10 })
 export const pageNumber = value => integer(value, 'Page', { min: 0 })
 
 const roomPattern = /^[WE]\d+[NS]\d+$/i

@@ -68,8 +68,11 @@ async function promptForDesktopLogin(url) {
 async function submitGameAction(api, expression, shard, sentence, options) {
   const result = await runGameExpression(api, expression, shard)
   assertGameAction(result)
-  if (options.json) output({ ok: true, result }, { json: true })
-  else output(sentence)
+  respond(options, { ok: true, result }, sentence)
+}
+
+function respond(options, json, text) {
+  output(options.json ? json : text, options)
 }
 
 async function waitForInterrupt(socket) {
@@ -127,57 +130,54 @@ async function empireOverview({ api, connection, shard }, options) {
   else output(formatStatus(result))
 }
 
-async function roomSnapshot(api, room, options, ownUserId) {
+async function roomData(api, room, shard) {
   const [terrainResponse, objectResponse, timeResponse] = await Promise.all([
-    api.gameRoomTerrain(room, options.shard),
-    api.gameRoomObjects(room, options.shard),
-    api.gameTime(options.shard)
+    api.gameRoomTerrain(room, shard), api.gameRoomObjects(room, shard), api.gameTime(shard)
   ])
-  const terrain = decodeTerrain(terrainResponse)
+  return {
+    terrain: decodeTerrain(terrainResponse),
+    objects: objectResponse.objects,
+    users: objectResponse.users || {},
+    tick: timeResponse.time
+  }
+}
+
+async function roomSnapshot(api, room, options, ownUserId) {
+  const data = await roomData(api, room, options.shard)
   if (options.json) {
-    return output({ room, tick: timeResponse.time, terrain, objects: objectResponse.objects, users: objectResponse.users || {} }, { json: true })
+    return output({ room, ...data }, { json: true })
   }
   output(renderRoom({
     name: room,
-    terrain,
-    objects: objectResponse.objects,
+    terrain: data.terrain,
+    objects: data.objects,
     ownUserId,
-    gameTime: timeResponse.time,
+    gameTime: data.tick,
     color: Boolean(options.color && stdout.isTTY)
   }))
 }
 
 async function tileSnapshot(api, target, options, ownUserId) {
-  const [terrainResponse, objectResponse, timeResponse] = await Promise.all([
-    api.gameRoomTerrain(target.room, options.shard),
-    api.gameRoomObjects(target.room, options.shard),
-    api.gameTime(options.shard)
-  ])
-  const terrain = decodeTerrain(terrainResponse)
-  const objects = objectResponse.objects.filter(object => object.x === target.x && object.y === target.y)
+  const data = await roomData(api, target.room, options.shard)
+  const objects = data.objects.filter(object => object.x === target.x && object.y === target.y)
   if (options.json) {
-    return output({ room: target.room, x: target.x, y: target.y, tick: timeResponse.time, terrain: terrain[target.y][target.x], objects }, { json: true })
+    return output({ room: target.room, x: target.x, y: target.y, tick: data.tick, terrain: data.terrain[target.y][target.x], objects }, { json: true })
   }
   output(renderTile({
     name: target.room,
     x: target.x,
     y: target.y,
-    terrain,
-    objects: objectResponse.objects,
-    users: objectResponse.users,
+    terrain: data.terrain,
+    objects: data.objects,
+    users: data.users,
     ownUserId
   }))
 }
 
 async function liveRoom(api, room, options, ownUserId) {
-  const [terrainResponse, objectResponse, timeResponse] = await Promise.all([
-    api.gameRoomTerrain(room, options.shard),
-    api.gameRoomObjects(room, options.shard),
-    api.gameTime(options.shard)
-  ])
-  const terrain = decodeTerrain(terrainResponse)
-  const state = new Map(objectResponse.objects.map(object => [object._id, object]))
-  let gameTime = timeResponse.time
+  const data = await roomData(api, room, options.shard)
+  const state = new Map(data.objects.map(object => [object._id, object]))
+  let gameTime = data.tick
   let visible = false
   const draw = () => {
     if (!visible) return
@@ -188,7 +188,7 @@ async function liveRoom(api, room, options, ownUserId) {
     }
     stdout.write(`${clear}${renderLiveRoomFrame({
       name: room,
-      terrain,
+      terrain: data.terrain,
       objects: [...state.values()],
       ownUserId,
       gameTime,
@@ -488,16 +488,16 @@ export async function run(program, argv) {
     .action(withClient(async ({ api }, directory = 'bot', options) => {
       const response = await api.userCodeGet(options.branch)
       const paths = await writeModules(directory, response.modules)
-      if (options.json) output({ directory, branch: options.branch, modules: paths.length }, { json: true })
-      else output(`Wrote ${paths.length} modules from ${options.branch} to ${directory}.`)
+      respond(options, { directory, branch: options.branch, modules: paths.length },
+        `Wrote ${paths.length} modules from ${options.branch} to ${directory}.`)
     }))
   code.command('push [directory]')
     .description('deploy local modules')
     .action(withClient(async ({ api }, directory = 'bot', options) => {
       const modules = await readModules(directory)
       await api.userCodeSet({ branch: options.branch, modules })
-      if (options.json) output({ directory, branch: options.branch, modules: Object.keys(modules).length }, { json: true })
-      else output(`Deployed ${Object.keys(modules).length} modules from ${directory} to ${options.branch}.`)
+      respond(options, { directory, branch: options.branch, modules: Object.keys(modules).length },
+        `Deployed ${Object.keys(modules).length} modules from ${directory} to ${options.branch}.`)
     }))
   code.command('branches')
     .description('list code branches and their active state')
@@ -515,8 +515,7 @@ export async function run(program, argv) {
     .description('activate a branch in the persistent world')
     .action(withClient(async ({ api }, branch, options) => {
       await api.userSetActiveBranch(branch, 'activeWorld')
-      if (options.json) output({ branch, activeWorld: true }, { json: true })
-      else output(`Activated code branch ${branch}.`)
+      respond(options, { branch, activeWorld: true }, `Activated code branch ${branch}.`)
     }))
 
   program.command('console [javascript]')
@@ -542,8 +541,7 @@ export async function run(program, argv) {
     .action(withClient(async ({ api }, path, value, options) => {
       const parsed = parseValue(value)
       await api.userMemorySet(path, parsed, options.shard)
-      if (options.json) output({ path, value: parsed }, { json: true })
-      else output(`Set Memory.${path}.`)
+      respond(options, { path, value: parsed }, `Set Memory.${path}.`)
     }))
 
   const market = program.command('market [resource]')
@@ -651,8 +649,7 @@ export async function run(program, argv) {
       const username = playerName(player)
       const response = await api.userMessagesSend(username, text)
       if (response?.error || response?.ok === 0) throw new Error(response.error || 'The game rejected the message.')
-      if (options.json) output({ player: username, sent: true }, { json: true })
-      else output(`Sent message to @${username}.`)
+      respond(options, { player: username, sent: true }, `Sent message to @${username}.`)
     }))
 
   program.command('docs [topic]')
@@ -679,8 +676,7 @@ export async function run(program, argv) {
     .action(async (server, _options, command) => {
       const options = command.optsWithGlobals()
       const url = await forgetServer(server || options.server)
-      if (options.json) output({ server: url, forgotten: true }, { json: true })
-      else output(`Forgot the login for ${url}.`)
+      respond(options, { server: url, forgotten: true }, `Forgot the login for ${url}.`)
     })
 
   program.command('raw <method> <path> [params]', { hidden: true })
