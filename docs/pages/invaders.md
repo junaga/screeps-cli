@@ -33,7 +33,7 @@ Note that you can use "Invasion" controls in the room side panel in order to cre
 
 ## Strongholds
 
-If invaders started raiding your rooms, check your map sector &mdash; there will be their home base somewhere.
+If invaders started raiding your rooms, check your map sector — there will be their home base somewhere.
 This NPC Stronghold can be attacked and destroyed, which will cause invaders to stop appearing in your rooms until the next stronghold spawns.
 
 Each NPC Stronghold has the `EFFECT_COLLAPSE_TIMER` on every structure. A new stronghold will appear somewhere in the sector almost immediately after the previous one has collapsed.
@@ -44,7 +44,7 @@ You can estimate stronghold's difficulty by checking the `level` property on the
 
 ![](https://docs.screeps.com/img/stronghold1.png) ![](https://docs.screeps.com/img/stronghold5.png)
 
-There is one more reason to conquer an NPC Stronghold &mdash; it contains resources in its treasury.
+There is one more reason to conquer an NPC Stronghold — it contains resources in its treasury.
 Every stronghold has a few containers, and the core structure ruin also will contain resources after you destroy it.
 Here is an example of a level 5 stronghold loot:
 

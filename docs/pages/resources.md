@@ -6,8 +6,10 @@ All resource kinds have different purposes, and you start playing only with acce
 
 ## Energy
 
-**Where to get:** a [`Source`](https://docs.screeps.com/api/#Source) in almost any room. <br>
-**How to get:** send a creep with a `WORK` part and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it. <br>
+**Where to get:** a [`Source`](https://docs.screeps.com/api/#Source) in almost any room.
+
+**How to get:** send a creep with a `WORK` part and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it.
+
 **Needed for:** spawning creeps, building structures.
 
 Energy is the main construction material in the Screeps world. Your base works on energy, so harvesting plenty of it is vital for any colony.
@@ -15,8 +17,10 @@ You can harvest energy not only in your home room, but also in other rooms remot
 
 ## Minerals
 
-**Where to get:** a [`Mineral`](https://docs.screeps.com/api/#Mineral) in almost any room. <br>
-**How to get:** build a [`StructureExtractor`](https://docs.screeps.com/api/#StructureExtractor), send a creep with a `WORK` part, and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it. <br>
+**Where to get:** a [`Mineral`](https://docs.screeps.com/api/#Mineral) in almost any room.
+
+**How to get:** build a [`StructureExtractor`](https://docs.screeps.com/api/#StructureExtractor), send a creep with a `WORK` part, and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it.
+
 **Needed for:** boosting creeps' capabilities, and also for producing trade commodities.
 
 By mining and processing minerals, you can significantly speed up your economy and boost the effectiveness of your creeps.
@@ -31,7 +35,9 @@ There are 7 types of base minerals shown in the picture below.
 
 Each room contains only one mineral type, so in order to handle them effectively you need either access to several suitable rooms or trade relationships with other players.
 
-<img src="https://docs.screeps.com/img/mining_minerals.png" align="right">A mineral deposit is located in a room at a spot marked by a special symbol. To start mining the deposit, you need to construct the special structure [**Extractor**](https://docs.screeps.com/api/#StructureExtractor) on top of it (available at Room Controller Level 6). Upon building it, you can start applying the method [`harvest`](https://docs.screeps.com/api/#Creep.harvest) to the deposit thus mining the corresponding mineral in the same way you harvest energy.
+![](https://docs.screeps.com/img/mining_minerals.png)
+
+A mineral deposit is located in a room at a spot marked by a special symbol. To start mining the deposit, you need to construct the special structure [**Extractor**](https://docs.screeps.com/api/#StructureExtractor) on top of it (available at Room Controller Level 6). Upon building it, you can start applying the method [`harvest`](https://docs.screeps.com/api/#Creep.harvest) to the deposit thus mining the corresponding mineral in the same way you harvest energy.
 
 ### Mineral compounds
 
@@ -41,7 +47,7 @@ Base minerals are useless on their own. In order to impart some useful capabilit
 
 One reaction requires three labs: two as reagent sources, and the third one as the produce collector. The labs should be within the range of 2 squares from each other. One lab cannot contain more than one mineral type at the same time.
 
-<img src="https://docs.screeps.com/img/2016-03-09_10-32-33.gif" align="right">
+![](https://docs.screeps.com/img/2016-03-09_10-32-33.gif)
 
     var labs = room.find(FIND_MY_STRUCTURES,
         {filter: {structureType: STRUCTURE_LAB}});
@@ -107,8 +113,10 @@ Boosting one body part takes 30 mineral compound units and 20 energy units. One 
 
 ## Commodities
 
-**Where to get:** a [`Deposit`](https://docs.screeps.com/api/#Deposit) in "highway" rooms. <br>
-**How to get:** send a creep with a `WORK` part and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it. <br>
+**Where to get:** a [`Deposit`](https://docs.screeps.com/api/#Deposit) in "highway" rooms.
+
+**How to get:** send a creep with a `WORK` part and [`harvest`](https://docs.screeps.com/api/#Creep.harvest) it.
+
 **Needed for:** producing trade commodities and earning credits.
 
 Trade commodities are resources that NPC market traders are most interested in. These resources have no other purpose
@@ -258,8 +266,10 @@ These commodities have the most lucrative prices on the market.
 
 ## Power
 
-**Where to get:** a [`StructurePowerBank`](https://docs.screeps.com/api/#StructurePowerBank) in "highway" rooms. <br>
-**How to get:** destroy the structure and loot the dropped resource. <br>
+**Where to get:** a [`StructurePowerBank`](https://docs.screeps.com/api/#StructurePowerBank) in "highway" rooms.
+
+**How to get:** destroy the structure and loot the dropped resource.
+
 **Needed for:** creating Power Creeps.
 
 See this article for more info: [Power](https://docs.screeps.com/power.html).

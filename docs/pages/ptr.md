@@ -7,12 +7,9 @@ The Public Test Realm is a stand-alone game server with its own world data, play
 
 ---
 
-<div style="text-align: center">
+**[ENTER](https://screeps.com/ptr/)**
 
-<p><strong style="font-size: 20px; background: #eee; padding: 10px 40px;">[ENTER](https://screeps.com/ptr/)</strong></p>
-
-<p>[API Reference](http://docs-ptr.screeps.com/api/)</p>
-</div>
+[API Reference](http://docs-ptr.screeps.com/api/)
 
 ---
 
@@ -22,7 +19,7 @@ Registering new accounts on PTR is blocked. Each time after data is copied from 
 
 Please take note that construction of any structures on the PTR costs only 1 energy unit and the controller upgrade requires 1000 energy units. It allows quick creation of infrastructure you need for testing purposes.
 
-If you use [grunt-screeps](https://docs.screeps.com/commit.html) for committing your scripts from a local machine, you can provide <code style="white-space: nowrap;">ptr: true</code> option in order to commit your code to the PTR.
+If you use [grunt-screeps](https://docs.screeps.com/commit.html) for committing your scripts from a local machine, you can provide `ptr: true` option in order to commit your code to the PTR.
 
 Engine code changes from the PTR are periodically deployed to the `ptr` branch of the private server package on npm, so you can use this command to run it locally:
 

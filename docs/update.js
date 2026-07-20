@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { basename, extname, join, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { DOCS_REPOSITORY, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
-import { absolutizeDocsLinks, transcodeHtmlTables } from './markdown.js'
+import { absolutizeDocsLinks, transcodeDocsMarkdown } from './markdown.js'
 
 const run = promisify(execFile)
 const pagesDestination = new URL('./pages/', import.meta.url)
@@ -55,7 +55,7 @@ function readPage(contents, powers, source) {
     .replace(/[ \t]+$/gm, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
-  body = transcodeHtmlTables(body)
+  body = transcodeDocsMarkdown(body)
   body = absolutizeDocsLinks(body, {
     site: DOCS_SITE,
     source

@@ -26,9 +26,7 @@ You can view your GPL on the [Overview page](https://screeps.com/a/#!/overview) 
 
 ## Power Creeps
 
-<video autoplay loop muted playsinline>
-    <source src="https://docs.screeps.com/img/pc_anim.mp4" type="video/mp4">
-</video>
+[Video](https://docs.screeps.com/img/pc_anim.mp4)
 
 [Power Creeps](https://docs.screeps.com/api/#PowerCreep) (PC) are game units different from regular creeps in the same way as hero units are different from regular ones in strategy games.
 
@@ -50,7 +48,7 @@ You can use PC skills in any room without a controller, or in a room with a powe
 
 Though PCs age and can die of old age, you can resume their time to live instantly and without cost by simply approaching any Power Spawn or Power Bank and executing [`PowerCreep.renew`](https://docs.screeps.com/api/#PowerCreep.renew). This allow them to move large distances on the map, provided you find Power Banks to recharge them on time.
 
-<strong style="color: #f33">CAUTION</strong>: You can delete a Power Creep from your account (to free up the GPL used and create a new one with it), but this will **decrease your GPL by 1**! The removal of a PC from your account takes 24 hours.
+**CAUTION**: You can delete a Power Creep from your account (to free up the GPL used and create a new one with it), but this will **decrease your GPL by 1**! The removal of a PC from your account takes 24 hours.
 
 If you want to review how your PCs are configured and create them from scratch, please activate an **experimentation period**. It will enable you to delete and recreate your PCs instantly without losing GPL within the 24-hour period. Each player is granted with 30 experimentation periods. It’s possible we’ll replenish them from time to time by some amount if balance adjustments or new skills are introduced in the game that force players to review their PC configuration.
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { absolutizeDocsLinks, transcodeHtmlTables } from '../docs/markdown.js'
+import { absolutizeDocsLinks, transcodeDocsMarkdown, transcodeHtmlTables } from '../docs/markdown.js'
 
 test('transcodes headers, category rows, inline HTML, and colspans', () => {
   const html = `<table>
@@ -67,5 +67,41 @@ test('resolves relative docs links and media to the production site', () => {
     '[API](https://docs.screeps.com/api/#Game)',
     '![](https://static.screeps.com/icon.png)',
     '<video><source src="https://docs.screeps.com/img/demo.mp4"></video>'
+  ].join('\n'))
+})
+
+test('transcodes presentation HTML without touching literal code examples', () => {
+  const markdown = [
+    '<video autoplay><source src="demo.mp4" type="video/mp4"></video>',
+    '<div style="text-align:center"><p><strong style="color:red">[ENTER](play.html)</strong></p></div>',
+    'Set <code style="white-space:nowrap">ptr: true</code>.<br>Then continue &mdash; carefully.',
+    '<img src="map.png" alt="Map" align="right">Description.',
+    'Use an `<iframe>` element.',
+    '```html',
+    '<table><tr><td>This is example code, not a table.</td></tr></table>',
+    '```'
+  ].join('\n')
+  assert.equal(transcodeDocsMarkdown(markdown), [
+    '[Video](demo.mp4)',
+    '',
+    '**[ENTER](play.html)**',
+    '',
+    'Set `ptr: true`.',
+    'Then continue — carefully.',
+    '![Map](map.png)',
+    '',
+    'Description.',
+    'Use an `<iframe>` element.',
+    '```html',
+    '<table><tr><td>This is example code, not a table.</td></tr></table>',
+    '```'
+  ].join('\n'))
+})
+
+test('keeps inline code formatting inside transcoded tables', () => {
+  assert.equal(transcodeDocsMarkdown('<table><tr><th>Header</th></tr><tr><td><code>a;b</code> and `<tag>`</td></tr></table>'), [
+    '| Header |',
+    '| --- |',
+    '| `a;b` and `<tag>` |'
   ].join('\n'))
 })

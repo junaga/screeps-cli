@@ -13,13 +13,16 @@ function inlineNode(node) {
   if (node.tagName === 'a') return attribute('href') ? `[${content}](${attribute('href')})` : content
   if (node.tagName === 'strong' || node.tagName === 'b') return `**${content}**`
   if (node.tagName === 'em') return `*${content}*`
+  if (node.tagName === 'code') {
+    const fence = content.includes('`') ? '``' : '`'
+    return `${fence}${content}${fence}`
+  }
   return content
 }
 
 function inlineNodes(nodes) {
   const value = nodes.map(inlineNode).join('')
     .replace(/(!\[[^\]]*\]\([^)]+\))(?=\S)/g, '$1 ')
-    .replace(/\s*;\s*/g, '; ')
     .replace(/\s+/g, ' ')
     .trim()
   return value.replaceAll('|', '\\|')
@@ -90,12 +93,86 @@ function transcodeCollapsibleTables(markdown) {
   })
 }
 
-export function transcodeHtmlTables(markdown) {
-  return transcodeCollapsibleTables(markdown)
-    .replace(/<style\b[^>]*>[^]*?<\/style>/gi, '')
-    .replace(/<table\b[^>]*>[^]*?<\/table>/gi, tableMarkdown)
+function protectCode(markdown) {
+  const values = []
+  const token = value => {
+    const placeholder = `\uE000SCREEPS_DOCS_CODE_${values.length}\uE001`
+    values.push(value)
+    return placeholder
+  }
+  const lines = markdown.match(/.*(?:\n|$)/g).filter(Boolean)
+  const outsideFences = []
+  for (let index = 0; index < lines.length;) {
+    const opening = /^(?: {0,3})(`{3,}|~{3,})/.exec(lines[index])
+    if (!opening) {
+      outsideFences.push(lines[index++])
+      continue
+    }
+    const marker = opening[1][0]
+    const minimum = opening[1].length
+    let end = index + 1
+    while (end < lines.length && !new RegExp(`^ {0,3}${marker}{${minimum},}[ \\t]*(?:\\n)?$`).test(lines[end])) end++
+    if (end < lines.length) end++
+    outsideFences.push(token(lines.slice(index, end).join('')))
+    index = end
+  }
+  const protectedMarkdown = outsideFences.join('').replace(/(`+)([^`\n]*?)\1/g, token)
+  return {
+    markdown: protectedMarkdown,
+    restore(value) {
+      return value.replace(/\uE000SCREEPS_DOCS_CODE_(\d+)\uE001/g, (_match, index) => values[Number(index)])
+    }
+  }
+}
+
+function attribute(tag, name) {
+  return new RegExp(`\\b${name}\\s*=\\s*["']([^"']+)["']`, 'i').exec(tag)?.[1]
+}
+
+function decodeEntities(markdown) {
+  const cache = new Map()
+  return markdown.replace(/&(?:#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi, entity => {
+    if (!cache.has(entity)) {
+      const node = parseFragment(entity).childNodes[0]
+      cache.set(entity, node?.nodeName === '#text' ? node.value : entity)
+    }
+    return cache.get(entity)
+  })
+}
+
+function transcodeRemainingHtml(markdown) {
+  return markdown
+    .replace(/<video\b[^>]*>[^]*?<source\b[^>]*\bsrc=["']([^"']+)["'][^>]*>[^]*?<\/video>/gi,
+      (_html, source) => `[Video](${source})`)
+    .replace(/<img\b[^>]*>/gi, tag => {
+      const source = attribute(tag, 'src')
+      return source ? `![${attribute(tag, 'alt') || ''}](${source})\n\n` : ''
+    })
+    .replace(/<source\b[^>]*>/gi, tag => {
+      const source = attribute(tag, 'src')
+      return source ? `[Media](${source})` : ''
+    })
+    .replace(/<code\b[^>]*>[^]*?<\/code>/gi,
+      html => parseFragment(html).childNodes.map(inlineNode).join(''))
+    .replace(/<(strong|b|em)\b[^>]*>[^]*?<\/\1>/gi, html => inlineMarkdown(html))
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/?nobr\b[^>]*>/gi, '')
+    .replace(/<\/?(?:div|p)\b[^>]*>/gi, '\n\n')
+    .replace(/<\/?video\b[^>]*>/gi, '')
+    .replace(/&(?:#x[\da-f]+|#\d+|[a-z][a-z\d]+);/gi, entity => decodeEntities(entity))
+    .replace(/[ \t]+$/gm, '')
     .replace(/\n{3,}/g, '\n\n')
 }
+
+export function transcodeDocsMarkdown(markdown) {
+  const protectedCode = protectCode(markdown)
+  const transcoded = transcodeRemainingHtml(transcodeCollapsibleTables(protectedCode.markdown)
+    .replace(/<style\b[^>]*>[^]*?<\/style>/gi, '')
+    .replace(/<table\b[^>]*>[^]*?<\/table>/gi, tableMarkdown))
+  return protectedCode.restore(transcoded).replace(/\n{3,}/g, '\n\n')
+}
+
+export const transcodeHtmlTables = transcodeDocsMarkdown
 
 function productionTarget(target, options) {
   if (/^[a-z][a-z\d+.-]*:/i.test(target)) return target

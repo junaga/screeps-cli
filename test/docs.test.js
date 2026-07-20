@@ -8,6 +8,23 @@ import { assertServerCompatibility, CLI_VERSION, DOCS_BUILT_AT, DOCS_REVISION, D
 
 const readDocsPage = file => readFile(new URL(`../docs/${file}`, import.meta.url), 'utf8')
 
+function proseOnly(markdown) {
+  const lines = markdown.split('\n')
+  let fence
+  return lines.map(line => {
+    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1]
+    if (!fence && marker) {
+      fence = marker[0]
+      return ''
+    }
+    if (fence) {
+      if (new RegExp(`^ {0,3}${fence}{3,}`).test(line)) fence = undefined
+      return ''
+    }
+    return line.replace(/(`+)[^`]*\1/g, '')
+  }).join('\n')
+}
+
 test('pins distinct CLI, game protocol, and official docs versions', async () => {
   assert.equal(CLI_VERSION, packageInfo.version)
   assert.equal(GAME_PROTOCOL, 14)
@@ -34,6 +51,7 @@ test('bundles clean authored guide pages without the generated API reference', a
     assert.ok(markdown.startsWith(`# ${page.title}\n\n`), page.command)
     assert.doesNotMatch(markdown, /\{%|^title:/m, page.command)
     assert.doesNotMatch(markdown, /<\/?(?:table|thead|tbody|tfoot|tr|th|td)\b/i, page.command)
+    assert.doesNotMatch(proseOnly(markdown), /<\/?(?:video|source|img|div|p|code|strong|nobr|br|style)\b/i, page.command)
     for (const match of markdown.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)) {
       assert.match(match[1], /^[a-z][a-z\d+.-]*:/i, `${page.command}: ${match[1]}`)
     }
