@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -54,6 +54,26 @@ test('pull synchronization removes stale and opposite-format modules', async t =
   await assert.rejects(readFile(join(directory, 'stale.js')), /ENOENT/)
   await assert.rejects(readFile(join(directory, 'engine.js')), /ENOENT/)
   assert.equal(await readFile(join(directory, 'notes.txt'), 'utf8'), 'keep me')
+})
+
+test('refuses module symlinks instead of reading or overwriting their targets', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'screeps-modules-test-'))
+  const outside = `${directory}-outside.js`
+  t.after(async () => {
+    await rm(directory, { recursive: true, force: true })
+    await rm(outside, { force: true })
+  })
+  await writeFile(outside, 'outside')
+  try {
+    await symlink(outside, join(directory, 'main.js'))
+  } catch (error) {
+    if (error.code === 'EPERM') return t.skip('symbolic links are unavailable')
+    throw error
+  }
+
+  await assert.rejects(() => readModules(directory), /symbolic link/)
+  await assert.rejects(() => writeModules(directory, { main: 'changed' }), /symbolic link/)
+  assert.equal(await readFile(outside, 'utf8'), 'outside')
 })
 
 test('refuses module names that escape the destination', async t => {
