@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
-import { cp, mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, glob, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { basename, extname, join, relative, sep } from 'node:path'
+import { basename, extname, join, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { DOCS_REPOSITORY, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
 import { absolutizeDocsLinks, transcodeHtmlTables } from './markdown.js'
@@ -9,17 +9,6 @@ import { absolutizeDocsLinks, transcodeHtmlTables } from './markdown.js'
 const run = promisify(execFile)
 const pagesDestination = new URL('./pages/', import.meta.url)
 const manifestDestination = new URL('./manifest.json', import.meta.url)
-
-async function markdownFiles(directory) {
-  const entries = await readdir(directory, { withFileTypes: true })
-  const files = await Promise.all(entries.map(async entry => {
-    if (entry.name.startsWith('_')) return []
-    const path = join(directory, entry.name)
-    if (entry.isDirectory()) return markdownFiles(path)
-    return extname(entry.name) === '.md' ? [path] : []
-  }))
-  return files.flat()
-}
 
 async function renderPowers(repository, temporary) {
   const packageInfo = JSON.parse(await readFile(join(repository, 'package.json'), 'utf8'))
@@ -79,19 +68,17 @@ async function main() {
   const repository = join(temporary, 'repository')
   const generated = join(temporary, 'generated')
   try {
-    await mkdir(repository)
-    await run('git', ['init', '--quiet', repository])
-    await run('git', ['-C', repository, 'remote', 'add', 'origin', DOCS_REPOSITORY])
-    await run('git', ['-C', repository, 'fetch', '--quiet', '--depth=1', 'origin', 'HEAD'])
-    await run('git', ['-C', repository, 'checkout', '--quiet', '--detach', 'FETCH_HEAD'])
+    await run('git', ['clone', '--quiet', '--depth=1', DOCS_REPOSITORY, repository])
     const revision = (await run('git', ['-C', repository, 'rev-parse', 'HEAD'])).stdout.trim()
 
     const sourceDirectory = join(repository, 'source')
     const powers = await renderPowers(repository, temporary)
     const pages = []
     await mkdir(join(generated, 'pages'), { recursive: true })
-    for (const file of await markdownFiles(sourceDirectory)) {
-      const source = relative(sourceDirectory, file).split(sep).join('/')
+    for await (const sourcePath of glob('**/*.md', { cwd: sourceDirectory })) {
+      if (sourcePath.split(sep).some(part => part.startsWith('_'))) continue
+      const file = join(sourceDirectory, sourcePath)
+      const source = sourcePath.split(sep).join('/')
       const sourceName = basename(file, extname(file))
       const command = sourceName === 'index' ? 'overview' : sourceName.replaceAll('_', '-')
       const page = readPage(await readFile(file, 'utf8'), powers, source)
