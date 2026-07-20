@@ -16,7 +16,7 @@
   ],
   "type": "module",
   "bin": {
-    "screeps": "./bin.js"
+    "screeps": "bin.js"
   },
   "files": [
     "bin.js",
