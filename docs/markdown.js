@@ -1,4 +1,3 @@
-import { dirname, join, normalize } from 'node:path/posix'
 import { parseFragment } from 'parse5'
 
 function inlineNode(node) {
@@ -101,15 +100,9 @@ export function transcodeHtmlTables(markdown) {
 function productionTarget(target, options) {
   if (/^[a-z][a-z\d+.-]*:/i.test(target)) return target
   if (target.startsWith('//')) return `https:${target}`
-
-  const suffixAt = target.search(/[?#]/)
-  const path = suffixAt < 0 ? target : target.slice(0, suffixAt)
-  const suffix = suffixAt < 0 ? '' : target.slice(suffixAt)
-  const sourcePath = path
-    ? normalize(path.startsWith('/') ? path.slice(1) : join(dirname(options.source), path))
-    : options.source
-  const publicPath = sourcePath.replace(/\.md$/i, '.html')
-  return new URL(`${publicPath}${suffix}`, options.site).href
+  const url = new URL(target, new URL(options.source, options.site))
+  url.pathname = url.pathname.replace(/\.md$/i, '.html')
+  return url.href
 }
 
 export function absolutizeDocsLinks(markdown, options) {
