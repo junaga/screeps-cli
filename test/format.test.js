@@ -41,6 +41,10 @@ test('formats messages without exposing server records', () => {
   )
   assert.equal(
     formatMessages({ messages: [{ message: { respondent: '42', type: 'out', text: 'hi' } }], users: { 42: { username: 'Ada' } } }),
+    'you → Ada: hi'
+  )
+  assert.equal(
+    formatMessages({ messages: [{ type: 'out', text: 'hi' }] }, 'Ada'),
     'you: hi'
   )
 })

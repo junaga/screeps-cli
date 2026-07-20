@@ -23,7 +23,8 @@ export function formatMessages(response, player) {
   return messages.map(entry => {
     const message = entry.message || entry
     const userId = message.respondent || message.user
-    const user = message.type === 'out' ? 'you' : player || message.username || response.users?.[userId]?.username || userId || 'unknown'
+    const other = player || message.username || response.users?.[userId]?.username || userId || 'unknown'
+    const user = message.type === 'out' ? (player ? 'you' : `you → ${other}`) : other
     const text = message.text || message.message || ''
     return `${user}: ${text}`.trim()
   }).join('\n')
