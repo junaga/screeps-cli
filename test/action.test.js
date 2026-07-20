@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { assertGameAction, runGameExpression } from '../src/action.js'
+import { assertGameAction, powerCreepAction, runGameExpression } from '../src/action.js'
 
 test('captures the result of a tick-based game action', async () => {
   let receive
@@ -25,4 +25,11 @@ test('translates common game return codes', () => {
   assert.doesNotThrow(() => assertGameAction(0))
   assert.throws(() => assertGameAction(-5), /order was not found/)
   assert.throws(() => assertGameAction(-6), /enough credits or resources/)
+})
+
+test('uses instance methods for power creep actions', () => {
+  assert.equal(powerCreepAction('Operator One', 'upgrade', 'PWR_GENERATE_OPS'),
+    'Game.powerCreeps["Operator One"].upgrade(PWR_GENERATE_OPS)')
+  assert.equal(powerCreepAction('Operator One', 'delete'), 'Game.powerCreeps["Operator One"].delete()')
+  assert.equal(powerCreepAction('Operator One', 'delete', 'true'), 'Game.powerCreeps["Operator One"].delete(true)')
 })

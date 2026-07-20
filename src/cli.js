@@ -2,7 +2,7 @@ import { stderr, stdin, stdout } from 'node:process'
 import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
-import { assertGameAction, runGameExpression } from './action.js'
+import { assertGameAction, powerCreepAction, runGameExpression } from './action.js'
 import { createClient, output, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
@@ -618,22 +618,22 @@ export async function run(program, argv) {
   power.command('create <name>')
     .description('create an operator')
     .action(withClient(async ({ api }, name, options) => submitGameAction(api,
-      `PowerCreep.create(${JSON.stringify(name)},'operator')`, options.shard, `Created power creep ${name}.`, options)))
+      `PowerCreep.create(${JSON.stringify(name)},POWER_CLASS.OPERATOR)`, options.shard, `Created power creep ${name}.`, options)))
   power.command('upgrade <name> <power>')
     .description('upgrade a power such as PWR_GENERATE_OPS')
     .action(withClient(async ({ api }, name, powerName, options) => {
       if (!/^PWR_[A-Z_]+$/.test(powerName)) throw new Error('Power must look like PWR_GENERATE_OPS.')
-      await submitGameAction(api, `Game.powerCreeps[${JSON.stringify(name)}].upgrade(${powerName})`, options.shard,
+      await submitGameAction(api, powerCreepAction(name, 'upgrade', powerName), options.shard,
         `Upgraded ${powerName} on ${name}.`, options)
     }))
   power.command('delete <name>')
     .description('schedule a power creep for deletion')
     .action(withClient(async ({ api }, name, options) => submitGameAction(api,
-      `PowerCreep.delete(${JSON.stringify(name)})`, options.shard, `Scheduled ${name} for deletion.`, options)))
+      powerCreepAction(name, 'delete'), options.shard, `Scheduled ${name} for deletion.`, options)))
   power.command('cancel-delete <name>')
     .description('cancel scheduled deletion')
     .action(withClient(async ({ api }, name, options) => submitGameAction(api,
-      `PowerCreep.cancelDelete(${JSON.stringify(name)})`, options.shard, `Cancelled deletion of ${name}.`, options)))
+      powerCreepAction(name, 'delete', 'true'), options.shard, `Cancelled deletion of ${name}.`, options)))
 
   const messages = program.command('messages [player]')
     .description('read conversations or message a player')

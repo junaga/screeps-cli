@@ -54,3 +54,7 @@ export function assertGameAction(result) {
   }
   throw new Error(`The game rejected the action (${result}${meanings[result] ? `: ${meanings[result]}` : ''}).`)
 }
+
+export function powerCreepAction(name, method, argument = '') {
+  return `Game.powerCreeps[${JSON.stringify(name)}].${method}(${argument})`
+}
