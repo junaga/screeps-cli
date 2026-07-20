@@ -1,6 +1,18 @@
-node_modules/
-.screeps.json
-coverage/
+*.log*
+tmp/
+*.env
 dist/
-*.log
 
+# windows, macos
+desktop.ini
+*Zone.Identifier
+.DS_Store
+__MACOSX/
+
+# javascript
+node_modules/
+.wrangler/
+coverage/
+
+# screeps
+.screeps.json

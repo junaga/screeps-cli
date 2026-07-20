@@ -4,12 +4,18 @@
   "description": "Play Screeps World from the terminal",
   "type": "module",
   "bin": {
-    "screeps": "./bin/screeps.js"
+    "screeps": "./bin.js"
   },
+  "files": [
+    "bin.js",
+    "src/",
+    "docs/manifest.json",
+    "docs/pages/"
+  ],
   "scripts": {
     "test": "node --test",
-    "docs:update": "node scripts/update-docs.js",
-    "check": "node --check bin/screeps.js && node --check src/*.js && node --check scripts/*.js && node --check bot/*.js && node --test"
+    "docs:update": "node docs/update.js",
+    "check": "node --check bin.js && node --check src/*.js && node --check docs/*.js && node --test"
   },
   "engines": {
     "node": "22.x || 24.x"

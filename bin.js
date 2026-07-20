@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander'
-import { run } from '../src/cli.js'
+import { run } from './src/cli.js'
 
 const program = new Command()
 

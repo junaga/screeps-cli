@@ -4,10 +4,11 @@ import { tmpdir } from 'node:os'
 import { basename, extname, join, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
 import { DOCS_REPOSITORY, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
-import { absolutizeDocsLinks, transcodeHtmlTables } from './docs-markdown.js'
+import { absolutizeDocsLinks, transcodeHtmlTables } from './markdown.js'
 
 const run = promisify(execFile)
-const destination = new URL('../docs/', import.meta.url)
+const pagesDestination = new URL('./pages/', import.meta.url)
+const manifestDestination = new URL('./manifest.json', import.meta.url)
 
 async function markdownFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -110,8 +111,9 @@ async function main() {
       pages
     }
     await writeFile(join(generated, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
-    await rm(destination, { recursive: true, force: true })
-    await cp(generated, destination, { recursive: true })
+    await rm(pagesDestination, { recursive: true, force: true })
+    await cp(join(generated, 'pages'), pagesDestination, { recursive: true })
+    await cp(join(generated, 'manifest.json'), manifestDestination)
   } finally {
     await rm(temporary, { recursive: true, force: true })
   }

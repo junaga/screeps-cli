@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { absolutizeDocsLinks, transcodeHtmlTables } from '../scripts/docs-markdown.js'
+import { absolutizeDocsLinks, transcodeHtmlTables } from '../docs/markdown.js'
 
 test('transcodes headers, category rows, inline HTML, and colspans', () => {
   const html = `<table>

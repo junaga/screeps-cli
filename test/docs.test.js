@@ -39,13 +39,13 @@ test('bundles clean authored guide pages without the generated API reference', a
 
 test('docs command prints its bundled Markdown page exactly', async () => {
   const expected = await readFile(new URL('../docs/pages/cpu-limit.md', import.meta.url), 'utf8')
-  const result = spawnSync(process.execPath, ['bin/screeps.js', 'docs', 'cpu-limit'], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, ['bin.js', 'docs', 'cpu-limit'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
   assert.equal(result.stdout, expected)
 })
 
 test('version reports CLI, game protocol, and dated docs revision', () => {
-  const result = spawnSync(process.execPath, ['bin/screeps.js', '--version'], { encoding: 'utf8' })
+  const result = spawnSync(process.execPath, ['bin.js', '--version'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
   assert.equal(result.stdout, [
     `CLI:      screeps ${packageInfo.version}`,
