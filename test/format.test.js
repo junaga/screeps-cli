@@ -33,7 +33,10 @@ test('includes actionable IDs in market order listings', () => {
 
 test('formats messages without exposing server records', () => {
   assert.equal(
-    formatMessages({ messages: [{ user: '42', text: 'hello' }], users: { 42: { username: 'Ada' } } }),
+    formatMessages({
+      messages: [{ message: { user: 'me', respondent: '42', type: 'in', text: 'hello' } }],
+      users: { 42: { username: 'Ada' } }
+    }),
     'Ada: hello'
   )
   assert.equal(
