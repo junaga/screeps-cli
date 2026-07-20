@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
 import { assertGameAction, powerCreepAction, runGameExpression } from './action.js'
-import { createClient, marketItems, output, shardItems } from './client.js'
+import { createClient, marketItems, output, playerId, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
@@ -639,15 +639,16 @@ export async function run(program, argv) {
     .description('read conversations or message a player')
     .usage('[@player]')
     .action(withClient(async ({ api }, player, options) => {
-      const response = player ? await api.userMessagesList(playerName(player)) : await api.userMessagesIndex()
-      if (options.json) output({ player: player ? playerName(player) : null, messages: response.messages || [], users: response.users || {} }, { json: true })
-      else output(formatMessages(response, player ? playerName(player) : undefined))
+      const username = player && playerName(player)
+      const response = username ? await api.userMessagesList(await playerId(api, username)) : await api.userMessagesIndex()
+      if (options.json) output({ player: username || null, messages: response.messages || [], users: response.users || {} }, { json: true })
+      else output(formatMessages(response, username))
     }))
   messages.command('send <@player> <text>')
     .description('send a message to @player')
     .action(withClient(async ({ api }, player, text, options) => {
       const username = playerName(player)
-      const response = await api.userMessagesSend(username, text)
+      const response = await api.userMessagesSend(await playerId(api, username), text)
       if (response?.error || response?.ok === 0) throw new Error(response.error || 'The game rejected the message.')
       respond(options, { player: username, sent: true }, `Sent message to @${username}.`)
     }))

@@ -41,6 +41,12 @@ export function marketItems(response, shard) {
   return groups.flatMap(group => Array.isArray(response?.[group]) ? response[group] : [])
 }
 
+export async function playerId(api, username) {
+  const id = (await api.userFind(username)).user?._id
+  if (!id) throw new Error(`Player @${username} was not found.`)
+  return id
+}
+
 export async function discoverShard(api) {
   const me = await api.authMe()
   const { shards = {} } = await api.userRooms(me._id)

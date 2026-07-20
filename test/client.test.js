@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
-import { createClient, discoverShard, marketItems, shardItems } from '../src/client.js'
+import { createClient, discoverShard, marketItems, playerId, shardItems } from '../src/client.js'
 import { writeConfig } from '../src/config.js'
 
 test('selects one shard or combines all shard results', () => {
@@ -24,6 +24,12 @@ test('selects world and account-wide market orders from the top-level response',
   }
   assert.deepEqual(marketItems(response, 'shard0').map(order => order._id), ['world', 'account-wide'])
   assert.deepEqual(marketItems(response).map(order => order._id), ['world', 'other-world', 'account-wide'])
+})
+
+test('resolves message recipients from usernames to database IDs', async () => {
+  const api = { async userFind(username) { return { user: username === 'Alice' ? { _id: 'alice-id' } : null } } }
+  assert.equal(await playerId(api, 'Alice'), 'alice-id')
+  await assert.rejects(playerId(api, 'Missing'), /Player @Missing was not found/)
 })
 
 test('discovers an occupied shard, then falls back to the busiest shard', async () => {
