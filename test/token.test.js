@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
+import { createLiveSocket } from '../src/live.js'
 import { exchangeSocketToken, extractServerPassword, extractSessionCandidates } from '../src/token.js'
 
 test('extracts newest unique private-server desktop sessions', () => {
@@ -14,6 +15,13 @@ test('extracts the shared password for the selected server only', () => {
   const data = Buffer.from('{"settings":{"host":"example.test","port":"21025","password":"server-secret","prefix":""}}')
   assert.equal(extractServerPassword([data], 'example.test'), 'server-secret')
   assert.equal(extractServerPassword([data], 'other.example'), undefined)
+})
+
+test('builds a live client from a newly authenticated HTTP token', () => {
+  const httpApi = { token: 'fresh-http-token', async me() { return { _id: 'me' } } }
+  const socket = createLiveSocket(httpApi, { url: 'http://127.0.0.1' })
+  assert.equal(typeof socket.connect, 'function')
+  socket.disconnect()
 })
 
 test('exchanges a rotating Screeps socket token', async t => {

@@ -52,7 +52,7 @@ export async function exchangeSocketToken({ url, token, serverPassword, timeout 
 }
 
 export function createLiveSocket(httpApi, connection, shard) {
-  const liveApi = new ScreepsHttpClient({ url: connection.url, token: connection.token })
+  const liveApi = new ScreepsHttpClient({ url: connection.url, token: connection.token || httpApi.token })
   liveApi.appConfig.defaultShard = shard
 
   // User-scoped subscriptions need the player ID. Resolve it with the stable
