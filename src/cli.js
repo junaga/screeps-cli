@@ -92,8 +92,7 @@ async function empireOverview({ api, connection, shard }, options) {
     unreadMessages: unread.count || 0,
     attention
   }
-  if (options.json) output(result, { json: true })
-  else output(formatStatus(result))
+  respond(options, result, formatStatus(result))
 }
 
 async function roomData(api, room, shard) {
@@ -110,10 +109,7 @@ async function roomData(api, room, shard) {
 
 async function roomSnapshot(api, room, options, ownUserId) {
   const data = await roomData(api, room, options.shard)
-  if (options.json) {
-    return output({ room, ...data }, { json: true })
-  }
-  output(renderRoom({
+  respond(options, { room, ...data }, renderRoom({
     name: room,
     terrain: data.terrain,
     objects: data.objects,
@@ -126,10 +122,7 @@ async function roomSnapshot(api, room, options, ownUserId) {
 async function tileSnapshot(api, target, options, ownUserId) {
   const data = await roomData(api, target.room, options.shard)
   const objects = data.objects.filter(object => object.x === target.x && object.y === target.y)
-  if (options.json) {
-    return output({ room: target.room, x: target.x, y: target.y, tick: data.tick, terrain: data.terrain[target.y][target.x], objects }, { json: true })
-  }
-  output(renderTile({
+  respond(options, { room: target.room, x: target.x, y: target.y, tick: data.tick, terrain: data.terrain[target.y][target.x], objects }, renderTile({
     name: target.room,
     x: target.x,
     y: target.y,
@@ -224,7 +217,6 @@ async function playerSnapshot(api, player, options) {
     control: controlResult.status === 'fulfilled' ? controlResult.value : null,
     power: powerResult.status === 'fulfilled' ? powerResult.value : null
   }
-  if (options.json) return output(result, { json: true })
   const user = result.player
   const details = []
   if (user.gcl != null) details.push(`GCL progress ${formatNumber(user.gcl)}`)
@@ -232,7 +224,7 @@ async function playerSnapshot(api, player, options) {
   if (user.power != null) details.push(`power ${formatNumber(user.power)}`)
   if (result.power?.rank != null) details.push(`power rank ${formatNumber(result.power.rank)}`)
   const lines = [`@${user.username}${details.length ? ` · ${details.join(' · ')}` : ''}`]
-  output(lines.join('\n'))
+  respond(options, result, lines.join('\n'))
 }
 
 async function inspectTarget(context, target, options) {
@@ -259,8 +251,8 @@ async function mapView(api, center, options) {
   const radius = integer(options.radius, 'Radius', { min: 0, max: 20 })
   const rooms = roomsAround(room, radius)
   const response = await api.gameMapStats(rooms, 'owner0', options.shard)
-  if (options.json) output({ center: room, radius, tick: response.gameTime ?? null, rooms: response.stats || {}, users: response.users || {} }, { json: true })
-  else output(renderWorldMap(room, radius, response))
+  respond(options, { center: room, radius, tick: response.gameTime ?? null, rooms: response.stats || {}, users: response.users || {} },
+    renderWorldMap(room, radius, response))
 }
 
 async function watchRooms(api, targets, options) {
@@ -352,8 +344,7 @@ function formatCodeDiff(diff) {
 async function codeDiff(api, directory, options) {
   const [local, remote] = await Promise.all([readModules(directory), api.userCodeGet(options.branch)])
   const diff = compareModules(local, remote.modules)
-  if (options.json) output({ directory, branch: options.branch, ...diff }, { json: true })
-  else output(formatCodeDiff(diff))
+  respond(options, { directory, branch: options.branch, ...diff }, formatCodeDiff(diff))
 }
 
 async function liveConsole(api, expression, options) {
@@ -400,10 +391,9 @@ function powerExpression(name) {
 async function powerView(api, name, options) {
   const result = await runGameExpression(api, powerExpression(name), options.shard)
   if (name && !result?.[name]) throw new Error(`Power creep "${name}" was not found.`)
-  if (options.json) return output(result, { json: true })
   const entries = Object.values(result || {})
-  if (!entries.length) return output('You have no power creeps.')
-  output(entries.map(creep => {
+  if (!entries.length) return respond(options, result, 'You have no power creeps.')
+  respond(options, result, entries.map(creep => {
     const location = creep.pos ? `${creep.pos.room} ${creep.pos.x},${creep.pos.y}` : 'not spawned'
     const powers = Object.entries(creep.powers || {}).map(([power, value]) => `${power} ${value.level}`).join(', ') || 'none'
     return `${creep.name} · ${creep.className} level ${creep.level} · ${location}\n  Powers: ${powers}`
@@ -472,8 +462,8 @@ export async function run(program, argv) {
         activeWorld: Boolean(branch.activeWorld),
         activeSimulation: Boolean(branch.activeSim)
       }))
-      if (options.json) output(branches, { json: true })
-      else output(branches.map(branch => `${branch.activeWorld ? '*' : ' '} ${branch.name}${branch.activeSimulation ? ' · simulation' : ''}`).join('\n') || 'No code branches.')
+      respond(options, branches,
+        branches.map(branch => `${branch.activeWorld ? '*' : ' '} ${branch.name}${branch.activeSimulation ? ' · simulation' : ''}`).join('\n') || 'No code branches.')
     }))
   code.command('use <branch>')
     .description('activate a branch in the persistent world')
@@ -514,21 +504,19 @@ export async function run(program, argv) {
     .action(withClient(async ({ api }, resource, options) => {
       if (resource) {
         const response = await api.gameMarketOrders(resource, intershardResources.has(resource) ? undefined : options.shard)
-        if (options.json) output({ resource, orders: response.list || [], users: response.users || {} }, { json: true })
-        else output(formatMarketOrders(response, resource))
+        respond(options, { resource, orders: response.list || [], users: response.users || {} }, formatMarketOrders(response, resource))
         return
       }
       const [me, orders] = await Promise.all([api.authMe(), api.gameMarketMyOrders()])
       const result = { credits: me.money || 0, orders: marketItems(orders, options.shard) }
-      if (options.json) output(result, { json: true })
-      else output(`${formatNumber(result.credits)} credits\n${formatMyOrders(result.orders)}`)
+      respond(options, result, `${formatNumber(result.credits)} credits\n${formatMyOrders(result.orders)}`)
     }))
   market.command('history [page]')
     .description('show your transaction history')
     .action(withClient(async ({ api }, page, options) => {
-      const response = await api.userMoneyHistory(page == null ? 0 : pageNumber(page))
-      if (options.json) output({ page: page == null ? 0 : pageNumber(page), transactions: response.list || [] }, { json: true })
-      else output(formatMarketHistory(response))
+      const selectedPage = pageNumber(page ?? 0)
+      const response = await api.userMoneyHistory(selectedPage)
+      respond(options, { page: selectedPage, transactions: response.list || [] }, formatMarketHistory(response))
     }))
   for (const type of ['buy', 'sell']) {
     market.command(`${type} <resource> <amount>`)
@@ -605,8 +593,8 @@ export async function run(program, argv) {
     .action(withClient(async ({ api }, player, options) => {
       const username = player && playerName(player)
       const response = username ? await api.userMessagesList(await playerId(api, username)) : await api.userMessagesIndex()
-      if (options.json) output({ player: username || null, messages: response.messages || [], users: response.users || {} }, { json: true })
-      else output(formatMessages(response, username))
+      respond(options, { player: username || null, messages: response.messages || [], users: response.users || {} },
+        formatMessages(response, username))
     }))
   messages.command('send <@player> <text>')
     .description('send a message to @player')
@@ -629,11 +617,9 @@ export async function run(program, argv) {
       const config = await readConfig()
       const selected = server || options.server || config.current || 'https://screeps.com'
       const result = await login({ server: selected, shard: options.shard, onDesktopRequired: promptForDesktopLogin })
-      if (options.json) output({ username: result.username, server: normalizeUrl(selected) }, { json: true })
-      else {
-        output(`Authenticated as ${result.username} on ${normalizeUrl(selected)}. This server is now active.`)
-        if (result.passwordCreated) output('Enabled durable live login for this account.')
-      }
+      respond(options, { username: result.username, server: normalizeUrl(selected) },
+        `Authenticated as ${result.username} on ${normalizeUrl(selected)}. This server is now active.`)
+      if (!options.json && result.passwordCreated) output('Enabled durable live login for this account.')
     })
 
   program.command('logout [server]')
