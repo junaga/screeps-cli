@@ -3,20 +3,11 @@
   "version": "0.2.0",
   "description": "Play Screeps World from the terminal",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/junaga/screeps-cli.git"
-  },
+  "repository": "https://github.com/junaga/screeps-cli.git",
   "type": "module",
   "bin": {
     "screeps": "bin.js"
   },
-  "files": [
-    "bin.js",
-    "src/",
-    "docs/manifest.json",
-    "docs/pages/"
-  ],
   "scripts": {
     "test": "node --test",
     "docs:update": "node docs/update.js",
