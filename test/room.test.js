@@ -143,6 +143,16 @@ test('reports strategic room transitions in a stable order', () => {
   ])
 })
 
+test('ignores predictable controller timers and progress', () => {
+  const state = new Map([['controller', {
+    _id: 'controller', type: 'controller', x: 1, y: 1,
+    progress: 10, reservation: { user: 'me', endTime: 200 }, safeMode: 50
+  }]])
+  assert.deepEqual(describeRoomChanges(state, { controller: {
+    progress: 11, reservation: { user: 'me', endTime: 201 }, safeMode: 49
+  } }), [])
+})
+
 test('limits a tile watch to objects interacting with that position', () => {
   const state = new Map([
     ['near', { _id: 'near', type: 'creep', name: 'Near', x: 1, y: 1 }],

@@ -185,7 +185,7 @@ function controlChanges(previous, current, patch, name, users) {
     const username = userName(users, current.user)
     lines.push(username ? `${name} is now owned by ${username}.` : `${name} became neutral.`)
   }
-  if (patch.reservation !== undefined && JSON.stringify(previous.reservation) !== JSON.stringify(current.reservation)) {
+  if (patch.reservation !== undefined && previous.reservation?.user !== current.reservation?.user) {
     const username = userName(users, current.reservation?.user)
     lines.push(username ? `${name} is now reserved by ${username}.` : `${name} is no longer reserved.`)
   }
