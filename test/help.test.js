@@ -4,12 +4,10 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('top-level help exactly matches the interface designed in the README', async () => {
-  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8')
-  const block = readme.match(/```text\n\$ screeps --help\n\n([\s\S]*?)\n```/)
-  assert.ok(block)
+  const readme = await readFile(new URL('../README', import.meta.url), 'utf8')
   const result = spawnSync(process.execPath, ['bin.js', '--help'], { encoding: 'utf8' })
   assert.equal(result.status, 0)
-  assert.equal(result.stdout, `${block[1]}\n`)
+  assert.equal(result.stdout, readme)
   assert.doesNotMatch(result.stdout, /\b(raw|build|flag|spawn|status|rooms)\b.*\n/)
 })
 

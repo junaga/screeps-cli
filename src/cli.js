@@ -19,8 +19,7 @@ import { login } from './token.js'
 import { integer, pageNumber, parseTarget, playerName, positiveNumber, roomName } from './validation.js'
 import { DOCS_MANIFEST, formatVersion } from './version.js'
 
-const TOP_HELP = /^\$ screeps --help\n\n([^]*?)^```/m
-  .exec(await readFile(new URL('../README.md', import.meta.url), 'utf8'))[1].trimEnd()
+const TOP_HELP = (await readFile(new URL('../README', import.meta.url), 'utf8')).trimEnd()
 
 const intershardResources = new Set([...Object.values(IntershardResources), 'token'])
 const docsDirectory = new URL('../docs/', import.meta.url)
