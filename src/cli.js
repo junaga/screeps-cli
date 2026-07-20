@@ -1,4 +1,5 @@
 import { stderr, stdin, stdout } from 'node:process'
+import { once } from 'node:events'
 import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
@@ -8,10 +9,10 @@ import {
   output, playerId, shardItems
 } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
-import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatNumber, formatStatus } from './format.js'
+import { formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatNumber, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
 import {
-  decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame,
+  decodeTerrain, describeObjectInspection, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame,
   renderRoom, renderTile, renderWorldMap, replaceRoomObjects, roomsAcrossBorder, roomsAround
 } from './room.js'
 import { login } from './token.js'
@@ -29,16 +30,12 @@ async function promptForDesktopLogin(url) {
     throw new Error(`Login needs an interactive terminal. Open Screeps, connect to ${url}, then run this command again.`)
   }
   stderr.write(`\nOpen Screeps and connect to ${url}.\nLog in, keep the game open, then return here.\n`)
-  const prompt = createInterface({ input: stdin, output: stderr })
-  try {
-    await prompt.question('Press Enter when the game is connected... ')
-  } finally {
-    prompt.close()
-  }
+  using prompt = createInterface({ input: stdin, output: stderr })
+  await prompt.question('Press Enter when the game is connected... ')
 }
 
-async function submitGameAction(api, expression, shard, sentence, options) {
-  const result = await runGameExpression(api, expression, shard)
+async function submitGameAction(api, options, expression, sentence) {
+  const result = await runGameExpression(api, expression, options.shard)
   assertGameAction(result)
   respond(options, { ok: true, result }, sentence)
 }
@@ -48,29 +45,22 @@ function respond(options, json, text) {
 }
 
 async function waitForInterrupt(socket, completion) {
-  await new Promise((resolve, reject) => {
-    const cleanup = () => {
-      process.removeListener('SIGINT', stop)
-      process.removeListener('SIGTERM', stop)
-      socket.off('reconnectFailed', fail)
-      socket.off('subscriptionFailed', fail)
-    }
-    const stop = () => {
-      cleanup()
-      socket.disconnect()
-      resolve()
-    }
-    const fail = error => {
-      cleanup()
-      socket.disconnect()
-      reject(error)
-    }
-    process.once('SIGINT', stop)
-    process.once('SIGTERM', stop)
-    socket.once('reconnectFailed', fail)
-    socket.once('subscriptionFailed', fail)
-    completion?.then(stop, fail)
-  })
+  const controller = new AbortController()
+  const failure = event => once(socket, event, { signal: controller.signal })
+    .then(([error]) => { throw error })
+  const endings = [
+    once(process, 'SIGINT', { signal: controller.signal }),
+    once(process, 'SIGTERM', { signal: controller.signal }),
+    failure('reconnectFailed'),
+    failure('subscriptionFailed')
+  ]
+  if (completion) endings.push(completion)
+  try {
+    await Promise.race(endings)
+  } finally {
+    controller.abort()
+    socket.disconnect()
+  }
 }
 
 function withClient(action) {
@@ -217,42 +207,7 @@ async function objectSnapshot(api, id, options) {
   if (!object) throw new Error(`Object ${id} is not visible.`)
   if (options.silent) return object
   if (options.json) return output(object, { json: true })
-  const title = object.type === 'resource' ? `dropped ${object.resourceType}` : `${object.type}${object.name ? ` ${object.name}` : ''}`
-  const lines = [title]
-  const identity = []
-  if (object.pos) identity.push(`${object.pos.room} ${object.pos.x},${object.pos.y}`)
-  if (object.owner) identity.push(object.owner.username || object.owner)
-  if (identity.length) lines.push(identity.join(' · '))
-  const condition = []
-  if (object.hits != null) condition.push(`${formatNumber(object.hits)}/${formatNumber(object.hitsMax)} hits`)
-  if (object.store) condition.push(...Object.entries(object.store).map(([resource, amount]) => `${formatNumber(amount)} ${resource}`))
-  if (object.type === 'resource' && object.amount != null) condition.push(`${formatNumber(object.amount)} ${object.resourceType}`)
-  if (object.type === 'source') {
-    condition.push(`${formatNumber(object.energy)}/${formatNumber(object.energyCapacity)} energy`)
-    if (object.ticksToRegeneration != null) condition.push(`regenerates in ${formatNumber(object.ticksToRegeneration)} ticks`)
-  }
-  if (object.type === 'mineral') {
-    condition.push(`${formatNumber(object.mineralAmount)} ${object.mineralType}`)
-    if (object.density != null) condition.push(`density ${object.density}`)
-    if (object.ticksToRegeneration != null) condition.push(`regenerates in ${formatNumber(object.ticksToRegeneration)} ticks`)
-  }
-  if (object.type === 'deposit') {
-    condition.push(object.depositType)
-    if (object.cooldown != null) condition.push(`${formatNumber(object.cooldown)} cooldown`)
-    if (object.lastCooldown != null) condition.push(`${formatNumber(object.lastCooldown)} last cooldown`)
-  }
-  if (object.ticksToDecay != null) condition.push(`${formatNumber(object.ticksToDecay)} ticks to decay`)
-  if (object.timeToLand != null) condition.push(`lands in ${formatNumber(object.timeToLand)} ticks`)
-  if (object.launchRoomName) condition.push(`launched from ${object.launchRoomName}`)
-  if (object.type === 'construction site' && object.structureType) condition.push(object.structureType)
-  if (object.structure?.structureType) condition.push(`destroyed ${object.structure.structureType}`)
-  if (object.creep?.name) condition.push(`remains of ${object.creep.name}`)
-  if (object.level != null) condition.push(`level ${object.level}`)
-  if (object.progress != null) condition.push(`${formatNumber(object.progress)}/${formatNumber(object.progressTotal)} progress`)
-  if (object.ticksToLive != null) condition.push(`${formatNumber(object.ticksToLive)} ticks left`)
-  if (condition.length) lines.push(condition.join(' · '))
-  if (object.body?.length) lines.push(formatBody(object.body))
-  output(lines.join('\n'))
+  output(describeObjectInspection(object))
   return object
 }
 
@@ -654,8 +609,8 @@ export async function run(program, argv) {
         if (intershardResources.has(resource) && room) throw new Error(`${resource} is account-wide and does not use --from.`)
         if (!intershardResources.has(resource) && !room) throw new Error('Ordinary resources require --from <room>.')
         const order = { type, resourceType: resource, price, totalAmount, ...(room ? { roomName: room } : {}) }
-        await submitGameAction(api, `Game.market.createOrder(${JSON.stringify(order)})`, options.shard,
-          `Created a ${type} order for ${totalAmount} ${resource} at ${price} credits${room ? ` in ${room}` : ''}.`, options)
+        await submitGameAction(api, options, `Game.market.createOrder(${JSON.stringify(order)})`,
+          `Created a ${type} order for ${totalAmount} ${resource} at ${price} credits${room ? ` in ${room}` : ''}.`)
       }))
   }
   market.command('deal <order> <amount>')
@@ -665,27 +620,27 @@ export async function run(program, argv) {
       const quantity = integer(amount, 'Amount', { min: 1 })
       const room = options.from && roomName(options.from)
       const args = [order, quantity, ...(room ? [room] : [])].map(JSON.stringify).join(',')
-      await submitGameAction(api, `Game.market.deal(${args})`, options.shard,
-        `Completed ${quantity} units of order ${order}${room ? ` through ${room}` : ''}.`, options)
+      await submitGameAction(api, options, `Game.market.deal(${args})`,
+        `Completed ${quantity} units of order ${order}${room ? ` through ${room}` : ''}.`)
     }))
   market.command('price <order> <credits>')
     .description('change an order price')
     .action(withClient(async ({ api }, order, credits, options) => {
       const price = positiveNumber(credits, 'Price')
-      await submitGameAction(api, `Game.market.changeOrderPrice(${JSON.stringify(order)},${price})`, options.shard,
-        `Changed order ${order} to ${price} credits per unit.`, options)
+      await submitGameAction(api, options, `Game.market.changeOrderPrice(${JSON.stringify(order)},${price})`,
+        `Changed order ${order} to ${price} credits per unit.`)
     }))
   market.command('extend <order> <amount>')
     .description('add volume to an order')
     .action(withClient(async ({ api }, order, amount, options) => {
       const quantity = integer(amount, 'Amount', { min: 1 })
-      await submitGameAction(api, `Game.market.extendOrder(${JSON.stringify(order)},${quantity})`, options.shard,
-        `Added ${quantity} units to order ${order}.`, options)
+      await submitGameAction(api, options, `Game.market.extendOrder(${JSON.stringify(order)},${quantity})`,
+        `Added ${quantity} units to order ${order}.`)
     }))
   market.command('cancel <order>')
     .description('cancel an order')
-    .action(withClient(async ({ api }, order, options) => submitGameAction(api,
-      `Game.market.cancelOrder(${JSON.stringify(order)})`, options.shard, `Cancelled order ${order}.`, options)))
+    .action(withClient(async ({ api }, order, options) => submitGameAction(api, options,
+      `Game.market.cancelOrder(${JSON.stringify(order)})`, `Cancelled order ${order}.`)))
 
   const power = program.command('power [creep]')
     .description('inspect and develop power creeps')
@@ -693,23 +648,23 @@ export async function run(program, argv) {
     .action(withClient(async ({ api }, name, options) => powerView(api, name, options)))
   power.command('create <name>')
     .description('create an operator')
-    .action(withClient(async ({ api }, name, options) => submitGameAction(api,
-      `PowerCreep.create(${JSON.stringify(name)},POWER_CLASS.OPERATOR)`, options.shard, `Created power creep ${name}.`, options)))
+    .action(withClient(async ({ api }, name, options) => submitGameAction(api, options,
+      `PowerCreep.create(${JSON.stringify(name)},POWER_CLASS.OPERATOR)`, `Created power creep ${name}.`)))
   power.command('upgrade <name> <power>')
     .description('upgrade a power such as PWR_GENERATE_OPS')
     .action(withClient(async ({ api }, name, powerName, options) => {
       if (!/^PWR_[A-Z_]+$/.test(powerName)) throw new Error('Power must look like PWR_GENERATE_OPS.')
-      await submitGameAction(api, powerCreepAction(name, 'upgrade', powerName), options.shard,
-        `Upgraded ${powerName} on ${name}.`, options)
+      await submitGameAction(api, options, powerCreepAction(name, 'upgrade', powerName),
+        `Upgraded ${powerName} on ${name}.`)
     }))
   power.command('delete <name>')
     .description('schedule a power creep for deletion')
-    .action(withClient(async ({ api }, name, options) => submitGameAction(api,
-      powerCreepAction(name, 'delete'), options.shard, `Scheduled ${name} for deletion.`, options)))
+    .action(withClient(async ({ api }, name, options) => submitGameAction(api, options,
+      powerCreepAction(name, 'delete'), `Scheduled ${name} for deletion.`)))
   power.command('cancel-delete <name>')
     .description('cancel scheduled deletion')
-    .action(withClient(async ({ api }, name, options) => submitGameAction(api,
-      powerCreepAction(name, 'delete', 'true'), options.shard, `Cancelled deletion of ${name}.`, options)))
+    .action(withClient(async ({ api }, name, options) => submitGameAction(api, options,
+      powerCreepAction(name, 'delete', 'true'), `Cancelled deletion of ${name}.`)))
 
   const messages = program.command('messages [player]')
     .description('read conversations or message a player')

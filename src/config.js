@@ -1,4 +1,4 @@
-import { chmod, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
@@ -34,9 +34,7 @@ export async function writeConfig(config) {
     await chmod(temporary, 0o600)
     await rename(temporary, path)
   } finally {
-    await unlink(temporary).catch(error => {
-      if (error.code !== 'ENOENT') throw error
-    })
+    await rm(temporary, { force: true })
   }
 }
 

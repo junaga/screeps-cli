@@ -81,18 +81,16 @@ export async function writeModules(directory, modules, { prune = true } = {}) {
     await ensureDirectory(root, dirname(module.path))
     await assertWritableModule(module.path)
   }
+  const written = []
+  for (const { binary, content, path } of planned) {
+    await writeFile(path, binary ? Buffer.from(content.binary, 'base64') : String(content))
+    written.push(path)
+  }
   if (prune) {
-    const expected = new Set(planned.map(module => module.path))
+    const expected = new Set(written)
     for (const file of existing) {
       if (!expected.has(file.path)) await unlink(file.path)
     }
-  }
-
-  const written = []
-  for (const { binary, content, path } of planned) {
-    await mkdir(dirname(path), { recursive: true })
-    await writeFile(path, binary ? Buffer.from(content.binary, 'base64') : String(content))
-    written.push(path)
   }
   return written
 }

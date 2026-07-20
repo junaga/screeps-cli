@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  coordinatesToRoomName, decodeTerrain, describeRoomChanges, mergeRoomObjects,
+  coordinatesToRoomName, decodeTerrain, describeObjectInspection, describeRoomChanges, mergeRoomObjects,
   renderLiveRoomFrame, renderRoom, renderTile, replaceRoomObjects,
   roomNameToCoordinates, roomsAcrossBorder, roomsAround
 } from '../src/room.js'
@@ -134,6 +134,14 @@ test('describes everything on a tile', () => {
 test('keeps an empty tile compact', () => {
   const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
   assert.equal(renderTile({ name: 'E4S1', x: 24, y: 18, terrain, objects: [] }), 'E4S1 24,18 · plain\nNo objects.')
+})
+
+test('uses the shared object description for direct inspection', () => {
+  assert.equal(describeObjectInspection({
+    type: 'creep', name: 'Worker', owner: { username: 'Ada' }, pos: { room: 'W1N1', x: 2, y: 3 },
+    hits: 90, hitsMax: 100, store: { energy: 20 }, ticksToLive: 50,
+    body: [{ type: 'move' }, { type: 'move' }, { type: 'work' }]
+  }), 'creep Worker\nW1N1 2,3 · Ada\n20 energy · 90/100 hits · 50 ticks left\n2 MOVE · WORK')
 })
 
 test('reports room state changes without narrating redundant action logs', () => {

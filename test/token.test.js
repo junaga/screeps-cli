@@ -8,6 +8,14 @@ import { WebSocketServer } from 'ws'
 import { createLiveSocket, exchangeSocketToken } from '../src/client.js'
 import { extractServerPassword, extractSessionCandidates, login } from '../src/token.js'
 
+async function websocketServer(t, onConnection) {
+  const server = new WebSocketServer({ port: 0 })
+  await new Promise(resolve => server.once('listening', resolve))
+  t.after(() => server.close())
+  server.on('connection', onConnection)
+  return server.address().port
+}
+
 test('extracts newest unique private-server desktop sessions', () => {
   const first = 'a'.repeat(40)
   const second = 'b'.repeat(40)
@@ -187,46 +195,42 @@ test('explains when a stock private server cannot create durable credentials', a
 })
 
 test('exchanges a rotating Screeps socket token', async t => {
-  const server = new WebSocketServer({ port: 0 })
-  await new Promise(resolve => server.once('listening', resolve))
-  t.after(() => server.close())
-  server.on('connection', socket => {
+  const port = await websocketServer(t, socket => {
     socket.on('message', message => {
       if (message.toString() === 'auth current-session') socket.send('auth ok next-session')
     })
   })
-  const address = server.address()
   const token = await exchangeSocketToken({
-    url: `http://127.0.0.1:${address.port}`,
+    url: `http://127.0.0.1:${port}`,
     token: 'current-session'
   })
   assert.equal(token, 'next-session')
 })
 
 test('preserves a private server URL path when opening its socket', async t => {
-  const server = new WebSocketServer({ port: 0 })
-  await new Promise(resolve => server.once('listening', resolve))
-  t.after(() => server.close())
-  server.on('connection', (socket, request) => {
+  const port = await websocketServer(t, (socket, request) => {
     assert.equal(request.url, '/screeps/socket/websocket')
     socket.on('message', () => socket.send('auth ok'))
   })
-  const address = server.address()
   assert.equal(await exchangeSocketToken({
-    url: `http://127.0.0.1:${address.port}/screeps`,
+    url: `http://127.0.0.1:${port}/screeps`,
     token: 'session'
   }), 'session')
 })
 
 test('returns null when a Screeps socket rejects a token', async t => {
-  const server = new WebSocketServer({ port: 0 })
-  await new Promise(resolve => server.once('listening', resolve))
-  t.after(() => server.close())
-  server.on('connection', socket => socket.on('message', () => socket.send('auth failed')))
-  const address = server.address()
+  const port = await websocketServer(t, socket => socket.on('message', () => socket.send('auth failed')))
   const token = await exchangeSocketToken({
-    url: `http://127.0.0.1:${address.port}`,
+    url: `http://127.0.0.1:${port}`,
     token: 'wrong-session'
   })
   assert.equal(token, null)
+})
+
+test('returns null when a Screeps socket closes without authenticating', async t => {
+  const port = await websocketServer(t, socket => socket.on('message', () => socket.close()))
+  assert.equal(await exchangeSocketToken({
+    url: `http://127.0.0.1:${port}`,
+    token: 'unanswered-session'
+  }), null)
 })

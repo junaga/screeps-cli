@@ -77,6 +77,7 @@ export async function exchangeSocketToken({ url, token, serverPassword, timeout 
       const match = data.toString().match(/^auth (ok|failed)(?: (.+))?$/)
       if (match) return match[1] === 'ok' ? (match[2] || token) : null
     }
+    return null
   } catch {
     return null
   } finally {
@@ -251,14 +252,9 @@ function roomSubscriptionError(room, event) {
 
 export async function openRoomSubscription(socket, room, shard, onUpdate, { timeout = 10_000 } = {}) {
   let initial
-  let rejectInitial
-  let resolveInitial
   let started = false
   const queued = []
-  const first = new Promise((resolve, reject) => {
-    resolveInitial = resolve
-    rejectInitial = reject
-  })
+  const { promise: first, resolve: resolveInitial, reject: rejectInitial } = Promise.withResolvers()
   const receive = event => {
     if (!initial) {
       initial = event

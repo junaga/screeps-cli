@@ -204,8 +204,6 @@ export function transcodeDocsMarkdown(markdown) {
   return protectedCode.restore(transcoded).replace(/\n{3,}/g, '\n\n')
 }
 
-export const transcodeHtmlTables = transcodeDocsMarkdown
-
 function productionTarget(target, options) {
   if (/^[a-z][a-z\d+.-]*:/i.test(target)) return target
   if (target.startsWith('//')) return `https:${target}`

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { cp, glob, mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, glob, mkdir, mkdtempDisposable, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, extname, join, sep } from 'node:path'
 import { promisify } from 'node:util'
@@ -64,46 +64,43 @@ function readPage(contents, powers, source) {
 }
 
 async function main() {
-  const temporary = await mkdtemp(join(tmpdir(), 'screeps-docs-'))
+  await using temporaryDirectory = await mkdtempDisposable(join(tmpdir(), 'screeps-docs-'))
+  const temporary = temporaryDirectory.path
   const repository = join(temporary, 'repository')
   const generated = join(temporary, 'generated')
-  try {
-    await run('git', ['clone', '--quiet', '--depth=1', DOCS_REPOSITORY, repository])
-    const revision = (await run('git', ['-C', repository, 'rev-parse', 'HEAD'])).stdout.trim()
+  await run('git', ['clone', '--quiet', '--depth=1', DOCS_REPOSITORY, repository])
+  const revision = (await run('git', ['-C', repository, 'rev-parse', 'HEAD'])).stdout.trim()
 
-    const sourceDirectory = join(repository, 'source')
-    const powers = await renderPowers(repository, temporary)
-    const pages = []
-    await mkdir(join(generated, 'pages'), { recursive: true })
-    for await (const sourcePath of glob('**/*.md', { cwd: sourceDirectory })) {
-      if (sourcePath.split(sep).some(part => part.startsWith('_'))) continue
-      const file = join(sourceDirectory, sourcePath)
-      const source = sourcePath.split(sep).join('/')
-      const sourceName = basename(file, extname(file))
-      const command = sourceName === 'index' ? 'overview' : sourceName.replaceAll('_', '-')
-      const page = readPage(await readFile(file, 'utf8'), powers, source)
-      const outputFile = `pages/${command}.md`
-      await writeFile(join(generated, outputFile), page.markdown)
-      pages.push({ command, file: outputFile, source, title: page.title })
-      process.stdout.write(`Generated ${command}\n`)
-    }
-    pages.sort((left, right) => left.command.localeCompare(right.command))
-
-    const manifest = {
-      gameProtocol: GAME_PROTOCOL,
-      site: DOCS_SITE,
-      repository: DOCS_REPOSITORY,
-      revision,
-      builtAt: new Date().toISOString().slice(0, 10),
-      pages
-    }
-    await writeFile(join(generated, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
-    await rm(pagesDestination, { recursive: true, force: true })
-    await cp(join(generated, 'pages'), pagesDestination, { recursive: true })
-    await cp(join(generated, 'manifest.json'), manifestDestination)
-  } finally {
-    await rm(temporary, { recursive: true, force: true })
+  const sourceDirectory = join(repository, 'source')
+  const powers = await renderPowers(repository, temporary)
+  const pages = []
+  await mkdir(join(generated, 'pages'), { recursive: true })
+  for await (const sourcePath of glob('**/*.md', { cwd: sourceDirectory })) {
+    if (sourcePath.split(sep).some(part => part.startsWith('_'))) continue
+    const file = join(sourceDirectory, sourcePath)
+    const source = sourcePath.split(sep).join('/')
+    const sourceName = basename(file, extname(file))
+    const command = sourceName === 'index' ? 'overview' : sourceName.replaceAll('_', '-')
+    const page = readPage(await readFile(file, 'utf8'), powers, source)
+    const outputFile = `pages/${command}.md`
+    await writeFile(join(generated, outputFile), page.markdown)
+    pages.push({ command, file: outputFile, source, title: page.title })
+    process.stdout.write(`Generated ${command}\n`)
   }
+  pages.sort((left, right) => left.command.localeCompare(right.command))
+
+  const manifest = {
+    gameProtocol: GAME_PROTOCOL,
+    site: DOCS_SITE,
+    repository: DOCS_REPOSITORY,
+    revision,
+    builtAt: new Date().toISOString().slice(0, 10),
+    pages
+  }
+  await writeFile(join(generated, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+  await rm(pagesDestination, { recursive: true, force: true })
+  await cp(join(generated, 'pages'), pagesDestination, { recursive: true })
+  await cp(join(generated, 'manifest.json'), manifestDestination)
 }
 
 await main()

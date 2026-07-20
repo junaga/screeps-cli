@@ -1,4 +1,4 @@
-import { formatNumber } from './format.js'
+import { formatBody, formatNumber } from './format.js'
 
 const GLYPHS = {
   source: 'S', mineral: 'M', deposit: 'D', controller: 'C', spawn: 'P',
@@ -81,19 +81,22 @@ function words(value) {
 }
 
 function owner(object, users, ownUserId) {
-  if (!object.user) return null
-  if (object.user === ownUserId) return 'yours'
-  return users[object.user]?.username || object.user
+  const value = object.user ?? object.owner
+  if (!value) return null
+  if (value === ownUserId) return 'yours'
+  return value.username || users[value]?.username || value
 }
 
 const amount = value => formatNumber(value, '?')
 
-function describeObject(object, users = {}, ownUserId) {
+function objectTitle(object) {
   const droppedType = object.resourceType || (object.type === 'energy' ? 'energy' : 'resource')
-  const title = object.type === 'energy'
-    ? `dropped ${droppedType}`
-    : `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
-  const details = [owner(object, users, ownUserId)]
+  return object.type === 'energy' || object.type === 'resource'
+    ? `dropped ${droppedType}` : `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
+}
+
+function objectDetails(object, users, ownUserId, includeOwner = true, includeBody = true) {
+  const details = includeOwner ? [owner(object, users, ownUserId)] : []
   const held = resources(object)
   const energy = held.energy
   const capacity = object.storeCapacity ?? object.storeCapacityResource?.energy ?? object.energyCapacity
@@ -104,14 +107,40 @@ function describeObject(object, users = {}, ownUserId) {
   if (object.hits != null) details.push(`${amount(object.hits)}/${amount(object.hitsMax)} hits`)
   if (object.level != null) details.push(`level ${object.level}`)
   if (object.progress != null) details.push(`${amount(object.progress)}/${amount(object.progressTotal)} progress`)
-  if (object.body?.length) {
-    const parts = Object.entries(Object.groupBy(object.body, part => String(part.type).toUpperCase()))
-      .map(([part, entries]) => `${entries.length} ${part}`)
-    details.push(parts.join(', '))
-  }
+  if (includeBody && object.body?.length) details.push(formatBody(object.body))
   if (object.fatigue) details.push(`${object.fatigue} fatigue`)
   if (object.spawning) details.push(`spawning ${object.spawning.name || 'a creep'}`)
-  return `${title}${details.filter(Boolean).length ? ` · ${details.filter(Boolean).join(' · ')}` : ''}`
+  if (object.ticksToLive != null) details.push(`${amount(object.ticksToLive)} ticks left`)
+  if (object.ticksToRegeneration != null) details.push(`regenerates in ${amount(object.ticksToRegeneration)} ticks`)
+  if (object.density != null) details.push(`density ${object.density}`)
+  if (object.depositType) details.push(object.depositType)
+  if (object.cooldown != null) details.push(`${amount(object.cooldown)} cooldown`)
+  if (object.lastCooldown != null) details.push(`${amount(object.lastCooldown)} last cooldown`)
+  if (object.ticksToDecay != null) details.push(`${amount(object.ticksToDecay)} ticks to decay`)
+  if (object.timeToLand != null) details.push(`lands in ${amount(object.timeToLand)} ticks`)
+  if (object.launchRoomName) details.push(`launched from ${object.launchRoomName}`)
+  if (object.type === 'construction site' && object.structureType) details.push(object.structureType)
+  if (object.structure?.structureType) details.push(`destroyed ${object.structure.structureType}`)
+  if (object.creep?.name) details.push(`remains of ${object.creep.name}`)
+  return details.filter(Boolean)
+}
+
+function describeObject(object, users = {}, ownUserId) {
+  const details = objectDetails(object, users, ownUserId)
+  return `${objectTitle(object)}${details.length ? ` · ${details.join(' · ')}` : ''}`
+}
+
+export function describeObjectInspection(object) {
+  const identity = []
+  if (object.pos) identity.push(`${object.pos.room} ${object.pos.x},${object.pos.y}`)
+  const ownership = owner(object, {}, undefined)
+  if (ownership) identity.push(ownership)
+  return [
+    objectTitle(object), identity.join(' · '),
+    objectDetails(object, {}, undefined, false, false).join(' · '),
+    object.body?.length && formatBody(object.body)
+  ]
+    .filter(Boolean).join('\n')
 }
 
 export function renderTile({ name, x, y, terrain, objects, users, ownUserId }) {

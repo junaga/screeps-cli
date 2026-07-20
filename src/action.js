@@ -13,12 +13,7 @@ function decodeConsoleText(value) {
 
 export async function runGameExpression(api, expression, shard) {
   const marker = `screeps-cli:${randomUUID()}:`
-  let resolveResult
-  let rejectResult
-  const result = new Promise((resolve, reject) => {
-    resolveResult = resolve
-    rejectResult = reject
-  })
+  const { promise: result, resolve: resolveResult, reject: rejectResult } = Promise.withResolvers()
   const receive = event => {
     if (shard && event.data.shard && event.data.shard !== shard) return
     if (event.data.error) {

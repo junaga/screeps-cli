@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { absolutizeDocsLinks, transcodeDocsMarkdown, transcodeHtmlTables } from '../docs/markdown.js'
+import { absolutizeDocsLinks, transcodeDocsMarkdown } from '../docs/markdown.js'
 
 test('transcodes headers, category rows, inline HTML, and colspans', () => {
   const html = `<table>
@@ -8,7 +8,7 @@ test('transcodes headers, category rows, inline HTML, and colspans', () => {
 <tr><th colspan="2">Tier 1</th></tr>
 <tr><td><strong>Utrium</strong></td><td>Attack<br>Heal&nbsp;&times;&nbsp;<em>2</em></td></tr>
 </table>`
-  assert.equal(transcodeHtmlTables(html), [
+  assert.equal(transcodeDocsMarkdown(html), [
     '| Name | Effect |',
     '| --- | --- |',
     '| **Tier 1** |  |',
@@ -21,7 +21,7 @@ test('drops decorative image columns and tolerates an unclosed row', () => {
 <tr><td><img src="power.svg"></td><th>GENERATE_OPS</th><td>Generate ops.</td>
 <tr><td><img src="spawn.svg"></td><th>OPERATE_SPAWN</th><td>Speed up spawning.</td></tr>
 </table>`
-  assert.equal(transcodeHtmlTables(html), [
+  assert.equal(transcodeDocsMarkdown(html), [
     '|  |  |',
     '| --- | --- |',
     '| **GENERATE_OPS** | Generate ops. |',
@@ -38,7 +38,7 @@ test('turns collapsible table controls into contextual Markdown headings', () =>
 <div class="collapsible-table__header"><i class="icon"></i><span>Mechanical chain</span><em>(click to expand)</em></div>
 <div class="collapsible-table__content"><table><tr><th>Product</th></tr><tr><td>Tube</td></tr></table></div>
 </div>`
-  assert.equal(transcodeHtmlTables(html), [
+  assert.equal(transcodeDocsMarkdown(html), [
     '## Commodities',
     '',
     '### Mechanical chain',
