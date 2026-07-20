@@ -5,24 +5,14 @@ import { dirname, join } from 'node:path'
 export const configPath = () => process.env.SCREEPS_CLI_CONFIG || join(homedir(), '.config', 'screeps-cli', 'config.json')
 
 function normalizeConfig(value = {}) {
-  if (value.servers) {
-    const servers = {}
-    for (const connection of Object.values(value.servers)) {
-      if (!connection?.url) continue
-      const url = normalizeUrl(connection.url)
-      servers[url] = { ...connection, url }
-    }
-    const current = value.current ? normalizeUrl(value.current) : Object.keys(servers)[0]
-    return { current, servers }
-  }
-
-  // Migrate the pre-0.1 named-profile format.
   const servers = {}
-  for (const connection of Object.values(value.profiles || {})) {
-    if (connection.url) servers[normalizeUrl(connection.url)] = { ...connection, url: normalizeUrl(connection.url) }
+  for (const connection of Object.values(value.servers || {})) {
+    if (!connection?.url) continue
+    const url = normalizeUrl(connection.url)
+    servers[url] = { ...connection, url }
   }
-  const currentUrl = value.profiles?.[value.current]?.url
-  return { current: currentUrl ? normalizeUrl(currentUrl) : Object.keys(servers)[0], servers }
+  const current = value.current ? normalizeUrl(value.current) : Object.keys(servers)[0]
+  return { current, servers }
 }
 
 export async function readConfig() {
