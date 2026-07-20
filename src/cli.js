@@ -5,7 +5,7 @@ import { IntershardResources } from 'screeps-api'
 import { assertGameAction, powerCreepAction, runGameExpression } from './action.js'
 import { createClient, marketItems, output, playerId, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
-import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
+import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatNumber, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
 import { login } from './token.js'
@@ -226,8 +226,6 @@ function objectExpression(id) {
   return `(()=>{const o=Game.getObjectById(${JSON.stringify(id)});if(!o)return null;const type=o.structureType||(o.className?'power creep':o.body?'creep':o.mineralType?'mineral':o.depositType?'deposit':o.resourceType?'resource':o.level!=null&&o.progressTotal!=null?'controller':'object');return {id:o.id,type,name:o.name,pos:o.pos&&{room:o.pos.roomName,x:o.pos.x,y:o.pos.y},owner:o.owner?.username,hits:o.hits,hitsMax:o.hitsMax,level:o.level,progress:o.progress,progressTotal:o.progressTotal,ticksToLive:o.ticksToLive,fatigue:o.fatigue,store:o.store&&Object.fromEntries(Object.entries(o.store)),body:o.body?.map(p=>({type:p.type,hits:p.hits,boost:p.boost}))}})()`
 }
 
-const displayNumber = value => new Intl.NumberFormat('en').format(value)
-
 async function objectSnapshot(api, id, options) {
   const object = await runGameExpression(api, objectExpression(id), options.shard)
   if (!object) throw new Error(`Object ${id} is not visible.`)
@@ -239,11 +237,11 @@ async function objectSnapshot(api, id, options) {
   if (object.owner) identity.push(object.owner)
   if (identity.length) lines.push(identity.join(' · '))
   const condition = []
-  if (object.hits != null) condition.push(`${displayNumber(object.hits)}/${displayNumber(object.hitsMax)} hits`)
-  if (object.store) condition.push(...Object.entries(object.store).map(([resource, amount]) => `${displayNumber(amount)} ${resource}`))
+  if (object.hits != null) condition.push(`${formatNumber(object.hits)}/${formatNumber(object.hitsMax)} hits`)
+  if (object.store) condition.push(...Object.entries(object.store).map(([resource, amount]) => `${formatNumber(amount)} ${resource}`))
   if (object.level != null) condition.push(`level ${object.level}`)
-  if (object.progress != null) condition.push(`${displayNumber(object.progress)}/${displayNumber(object.progressTotal)} progress`)
-  if (object.ticksToLive != null) condition.push(`${displayNumber(object.ticksToLive)} ticks left`)
+  if (object.progress != null) condition.push(`${formatNumber(object.progress)}/${formatNumber(object.progressTotal)} progress`)
+  if (object.ticksToLive != null) condition.push(`${formatNumber(object.ticksToLive)} ticks left`)
   if (condition.length) lines.push(condition.join(' · '))
   if (object.body?.length) lines.push(formatBody(object.body))
   output(lines.join('\n'))
@@ -263,10 +261,10 @@ async function playerSnapshot(api, player, options) {
   if (options.json) return output(result, { json: true })
   const user = result.player
   const details = []
-  if (user.gcl != null) details.push(`GCL progress ${displayNumber(user.gcl)}`)
-  if (result.control?.rank != null) details.push(`world rank ${displayNumber(result.control.rank)}`)
-  if (user.power != null) details.push(`power ${displayNumber(user.power)}`)
-  if (result.power?.rank != null) details.push(`power rank ${displayNumber(result.power.rank)}`)
+  if (user.gcl != null) details.push(`GCL progress ${formatNumber(user.gcl)}`)
+  if (result.control?.rank != null) details.push(`world rank ${formatNumber(result.control.rank)}`)
+  if (user.power != null) details.push(`power ${formatNumber(user.power)}`)
+  if (result.power?.rank != null) details.push(`power rank ${formatNumber(result.power.rank)}`)
   const lines = [`@${user.username}${details.length ? ` · ${details.join(' · ')}` : ''}`]
   output(lines.join('\n'))
 }
@@ -342,13 +340,13 @@ async function watchRooms(api, targets, options) {
 
   const announce = event => {
     if (options.json) output({ type: 'event', ...event }, { ndjson: true })
-    else output(`${displayNumber(event.tick)}  ${rooms.length > 1 ? `${event.room}  ` : ''}${event.message}`)
+    else output(`${formatNumber(event.tick)}  ${rooms.length > 1 ? `${event.room}  ` : ''}${event.message}`)
   }
   if (options.json) {
     for (const room of rooms) output({ type: 'start', tick: ticks.get(room), room, target: targetInfo }, { ndjson: true })
   } else if (rooms.length === 1) {
     const label = targets.target ? targetLabel : `${targetLabel} in ${rooms[0]}`
-    output(`Watching ${label} from tick ${displayNumber(ticks.get(rooms[0]))}.`)
+    output(`Watching ${label} from tick ${formatNumber(ticks.get(rooms[0]))}.`)
   } else {
     output(`Watching ${targetLabel} across ${rooms.length} rooms. Press Ctrl-C to stop.`)
   }
@@ -557,7 +555,7 @@ export async function run(program, argv) {
       const [me, orders] = await Promise.all([api.authMe(), api.gameMarketMyOrders()])
       const result = { credits: me.money || 0, orders: marketItems(orders, options.shard) }
       if (options.json) output(result, { json: true })
-      else output(`${displayNumber(result.credits)} credits\n${formatMyOrders(result.orders)}`)
+      else output(`${formatNumber(result.credits)} credits\n${formatMyOrders(result.orders)}`)
     }))
   market.command('history [page]')
     .description('show your transaction history')

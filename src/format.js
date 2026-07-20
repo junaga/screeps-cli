@@ -1,16 +1,15 @@
-function number(value, fallback = '—') {
-  return Number.isFinite(value) ? new Intl.NumberFormat('en').format(value) : fallback
-}
+const numbers = new Intl.NumberFormat('en')
+export const formatNumber = (value, fallback = '—') => Number.isFinite(value) ? numbers.format(value) : fallback
 
 export function formatStatus({ server, shard, tick, player, rooms, attention = [] }) {
   const host = (() => {
     try { return new URL(server).host } catch { return server }
   })()
-  const economy = [`CPU ${number(player.cpu)}`, `GCL progress ${number(player.gclProgress)}`]
-  if (player.powerProcessed) economy.push(`Power ${number(player.powerProcessed)}`)
-  economy.push(`${number(player.credits, '0')} credits`)
+  const economy = [`CPU ${formatNumber(player.cpu)}`, `GCL progress ${formatNumber(player.gclProgress)}`]
+  if (player.powerProcessed) economy.push(`Power ${formatNumber(player.powerProcessed)}`)
+  economy.push(`${formatNumber(player.credits, '0')} credits`)
   return [
-    `${player.username} at ${host}${shard ? ` · ${shard}` : ''} · tick ${number(tick)}`,
+    `${player.username} at ${host}${shard ? ` · ${shard}` : ''} · tick ${formatNumber(tick)}`,
     `${rooms.length === 1 ? 'Room' : 'Rooms'}: ${rooms.length ? rooms.join(', ') : 'none'}`,
     economy.join(' · '),
     attention.length ? `Needs attention: ${attention.join(' ')}` : 'All quiet.'
@@ -48,7 +47,7 @@ function formatOrders(orders, resource, empty) {
     const amount = order.remainingAmount ?? order.amount
     const room = order.roomName ? ` in ${order.roomName}` : ''
     const id = order._id || order.id
-    return `${id ? `${id}  ` : ''}${order.type} ${number(amount)} ${resource || order.resourceType} at ${order.price}${room}`
+    return `${id ? `${id}  ` : ''}${order.type} ${formatNumber(amount)} ${resource || order.resourceType} at ${order.price}${room}`
   }).join('\n')
 }
 

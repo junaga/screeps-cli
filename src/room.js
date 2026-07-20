@@ -1,3 +1,5 @@
+import { formatNumber } from './format.js'
+
 const GLYPHS = {
   source: 'S', mineral: 'M', deposit: 'D', controller: 'C', spawn: 'P',
   extension: 'e', tower: 'T', storage: 'G', terminal: 'L', container: 'n',
@@ -49,7 +51,7 @@ function glyphFor(object, ownUserId) {
 export function renderRoom({ name, terrain, objects, ownUserId, gameTime, color = process.stdout.isTTY }) {
   const cells = indexObjects(objects)
   const lines = []
-  const title = `${name}${gameTime == null ? '' : `  tick ${new Intl.NumberFormat('en').format(gameTime)}`}`
+  const title = `${name}${gameTime == null ? '' : `  tick ${formatNumber(gameTime)}`}`
   lines.push(title, `   ${Array.from({ length: 50 }, (_, x) => Math.floor(x / 10) || ' ').join('')}`, `   ${Array.from({ length: 50 }, (_, x) => x % 10).join('')}`)
   for (let y = 0; y < 50; y++) {
     let row = `${String(y).padStart(2, '0')} `
@@ -84,9 +86,7 @@ function owner(object, users, ownUserId) {
   return users[object.user]?.username || object.user
 }
 
-function amount(value) {
-  return Number.isFinite(value) ? new Intl.NumberFormat('en').format(value) : '?'
-}
+const amount = value => formatNumber(value, '?')
 
 function describeObject(object, users = {}, ownUserId) {
   const title = `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
@@ -224,7 +224,7 @@ export function renderWorldMap(center, radius, response) {
   const stats = response?.stats || {}
   const users = response?.users || {}
   const names = new Map()
-  const tick = Number.isFinite(response?.gameTime) ? new Intl.NumberFormat('en').format(response.gameTime) : '?'
+  const tick = formatNumber(response?.gameTime, '?')
   const lines = [`${center} · tick ${tick}`, '. neutral · 0 reserved · 1-8 RCL · # closed']
   for (let y = origin.y - radius; y <= origin.y + radius; y++) {
     const row = []
