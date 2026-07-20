@@ -41,8 +41,7 @@ export function formatBody(body = []) {
   return runs.map(run => `${run.count > 1 ? `${run.count} ` : ''}${run.type}`).join(' · ')
 }
 
-function formatOrders(response, resource, empty) {
-  const orders = response?.list || []
+function formatOrders(orders, resource, empty) {
   if (!orders.length) return empty
   return orders.map(order => {
     const amount = order.remainingAmount ?? order.amount
@@ -52,8 +51,8 @@ function formatOrders(response, resource, empty) {
   }).join('\n')
 }
 
-export const formatMarketOrders = (response, resource) => formatOrders(response, resource, `No ${resource} orders.`)
-export const formatMyOrders = response => formatOrders(response, undefined, 'No active orders.')
+export const formatMarketOrders = (response, resource) => formatOrders(response?.list || [], resource, `No ${resource} orders.`)
+export const formatMyOrders = orders => formatOrders(orders, undefined, 'No active orders.')
 
 export function formatMarketHistory(response) {
   const entries = response?.list || []

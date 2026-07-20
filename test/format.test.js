@@ -17,7 +17,7 @@ test('formats status as a short player summary', () => {
 
 test('formats market empty states plainly', () => {
   assert.equal(formatMarketOrders({ list: [] }, 'energy'), 'No energy orders.')
-  assert.equal(formatMyOrders({ list: [] }), 'No active orders.')
+  assert.equal(formatMyOrders([]), 'No active orders.')
 })
 
 test('includes actionable IDs in market order listings', () => {
@@ -26,7 +26,7 @@ test('includes actionable IDs in market order listings', () => {
     'order-1  sell 50 energy at 2 in E4S1'
   )
   assert.equal(
-    formatMyOrders({ list: [{ _id: 'order-2', type: 'buy', remainingAmount: 10, resourceType: 'power', price: 3 }] }),
+    formatMyOrders([{ _id: 'order-2', type: 'buy', remainingAmount: 10, resourceType: 'power', price: 3 }]),
     'order-2  buy 10 power at 3'
   )
 })

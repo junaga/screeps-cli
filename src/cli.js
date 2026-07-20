@@ -559,7 +559,7 @@ export async function run(program, argv) {
       const [me, orders] = await Promise.all([api.authMe(), api.gameMarketMyOrders()])
       const result = { credits: me.money || 0, orders: shardItems(orders, options.shard) }
       if (options.json) output(result, { json: true })
-      else output(`${displayNumber(result.credits)} credits\n${formatMyOrders(orders)}`)
+      else output(`${displayNumber(result.credits)} credits\n${formatMyOrders(result.orders)}`)
     }))
   market.command('history [page]')
     .description('show your transaction history')
