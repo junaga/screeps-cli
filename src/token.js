@@ -2,11 +2,9 @@ import { randomBytes } from 'node:crypto'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { createHttpClient, createSessionToken, exchangeSocketToken } from './client.js'
 import { normalizeUrl, readConfig, writeConfig } from './config.js'
-import { createSessionToken, exchangeSocketToken } from './live.js'
 import { assertServerCompatibility } from './version.js'
-
-export { exchangeSocketToken } from './live.js'
 
 function defaultClientStoragePaths() {
   if (process.platform === 'darwin') {
@@ -64,29 +62,22 @@ async function readStorage(path) {
   return buffers
 }
 
-async function requestJson(url, options) {
-  const response = await fetch(url, options)
-  let body = {}
-  try { body = await response.json() } catch {}
-  return { response, body }
-}
+const request = (connection, method, path, params) => createHttpClient(connection).req(method, path, params)
 
-function authHeaders({ token, serverPassword }, json = false) {
-  return {
-    ...(json ? { 'Content-Type': 'application/json' } : {}),
-    'X-Token': token,
-    'X-Username': token,
-    ...(serverPassword ? { 'X-Server-Password': serverPassword } : {})
+async function identityFor(connection) {
+  try {
+    const api = createHttpClient(connection)
+    const identity = await api.authMe()
+    return identity.error ? null : { identity, token: api.token }
+  } catch (error) {
+    if (!error.status) throw error
+    return null
   }
 }
 
 async function setAccountPassword(connection, password) {
-  const { response, body } = await requestJson(`${connection.url.replace(/\/$/, '')}/api/user/password`, {
-    method: 'POST',
-    headers: authHeaders(connection, true),
-    body: JSON.stringify({ password })
-  })
-  if (!response.ok || body.ok !== 1) throw new Error(`The server could not enable durable live login (${body.error || response.status}).`)
+  const body = await request(connection, 'POST', '/api/user/password', { password })
+  if (body.ok !== 1) throw new Error(`The server could not enable durable live login (${body.error || 'request failed'}).`)
 }
 
 async function saveLogin(config, connection) {
@@ -118,18 +109,13 @@ async function prepareLiveLogin({ connection, config, identity, token }) {
 
 async function validateToken({ url, token, serverPassword, username }) {
   if (!token) return null
-  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/auth/me`, {
-    headers: authHeaders({ token, serverPassword })
-  })
-  if (!response.ok || body.error || (username && body.username !== username)) return null
-  return body
+  const result = await identityFor({ url, token, serverPassword })
+  return result && (!username || result.identity.username === username) ? result.identity : null
 }
 
 async function validateServer({ url, token, serverPassword }) {
-  const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/version`, {
-    headers: authHeaders({ token, serverPassword })
-  })
-  if (!response.ok || body.error) throw new Error(`Cannot inspect the Screeps server (${body.error || response.status}).`)
+  const body = await createHttpClient({ url, token, serverPassword }).version()
+  if (body.error) throw new Error(`Cannot inspect the Screeps server (${body.error}).`)
   return assertServerCompatibility(body)
 }
 
@@ -146,13 +132,10 @@ async function findDesktopSession({ connection, storagePath }) {
   let identity
 
   for (const candidate of candidates) {
-    const { response, body } = await requestJson(`${baseUrl}/api/auth/me`, {
-      headers: authHeaders({ token: candidate, serverPassword })
-    })
-    if (!response.ok || body.error) continue
-    if (connection.username && body.username !== connection.username) continue
-    sessionToken = response.headers.get('x-token') || candidate
-    identity = body
+    const result = await identityFor({ url: baseUrl, token: candidate, serverPassword })
+    if (!result || (connection.username && result.identity.username !== connection.username)) continue
+    sessionToken = result.token
+    identity = result.identity
     break
   }
   if (!sessionToken) throw new Error('No active desktop session matched this server. Open Screeps, connect to it, leave it running, then retry.')
@@ -164,12 +147,9 @@ async function importDesktopToken({ connection, storagePath }) {
   const baseUrl = connection.url.replace(/\/$/, '')
   const { identity, serverPassword, sessionToken } = await findDesktopSession({ connection, storagePath })
 
-  const { response, body } = await requestJson(`${baseUrl}/api/user/auth-token`, {
-    method: 'POST',
-    headers: authHeaders({ token: sessionToken, serverPassword }, true),
-    body: JSON.stringify({ type: 'full', description: 'screeps-terminal CLI' })
-  })
-  if (!response.ok || !body.token) throw new Error(`The server did not create a persistent API token (${body.error || response.status}).`)
+  const body = await request({ url: baseUrl, token: sessionToken, serverPassword },
+    'POST', '/api/user/auth-token', { type: 'full', description: 'screeps-terminal CLI' })
+  if (!body.token) throw new Error(`The server did not create a persistent API token (${body.error || 'request failed'}).`)
   await validateServer({ url: baseUrl, token: body.token, serverPassword })
   const config = await readConfig()
   const imported = {

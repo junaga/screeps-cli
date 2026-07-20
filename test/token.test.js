@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
-import { createLiveSocket } from '../src/live.js'
-import { exchangeSocketToken, extractServerPassword, extractSessionCandidates, login } from '../src/token.js'
+import { createLiveSocket, exchangeSocketToken } from '../src/client.js'
+import { extractServerPassword, extractSessionCandidates, login } from '../src/token.js'
 
 test('extracts newest unique private-server desktop sessions', () => {
   const first = 'a'.repeat(40)
