@@ -133,13 +133,74 @@ function resources(object) {
   return values
 }
 
+const onTile = (objects, target) => target && objects.some(object => object?.x === target.x && object?.y === target.y)
+
+function movementAndDamage(previous, current, patch, name, detailed) {
+  const lines = []
+  if (detailed && (patch.x != null || patch.y != null) && (previous.x !== current.x || previous.y !== current.y)) {
+    lines.push(`${name} moved ${position(previous)} -> ${position(current)}.`)
+  }
+  if (patch.hits != null && previous.hits != null && previous.hits !== current.hits) {
+    const change = current.hits - previous.hits
+    if (detailed || change < 0 || ['creep', 'powerCreep'].includes(current.type)) {
+      lines.push(`${name} ${change < 0 ? 'lost' : 'recovered'} ${amount(Math.abs(change))} hits (${amount(current.hits)}/${amount(current.hitsMax)}).`)
+    }
+  }
+  return lines
+}
+
+function resourceAndProgress(previous, current, patch, name, detailed) {
+  if (!detailed) return []
+  const lines = []
+  if (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null) {
+    const before = resources(previous)
+    const after = resources(current)
+    for (const resource of new Set([...Object.keys(before), ...Object.keys(after)])) {
+      if (before[resource] !== after[resource]) {
+        lines.push(`${name} ${resource} changed ${amount(before[resource] ?? 0)} -> ${amount(after[resource] ?? 0)}.`)
+      }
+    }
+  }
+  if (patch.progress != null && previous.progress != null && previous.progress !== current.progress) {
+    lines.push(`${name} progress changed ${amount(previous.progress)} -> ${amount(current.progress)}.`)
+  }
+  return lines
+}
+
+function lifecycleChanges(previous, current, patch, name) {
+  const lines = []
+  if (patch.level != null && previous.level != null && previous.level !== current.level) lines.push(`${name} reached level ${current.level}.`)
+  if (patch.spawning !== undefined && Boolean(previous.spawning) !== Boolean(current.spawning)) {
+    if (current.spawning) lines.push(`${name} started spawning ${current.spawning.name || 'a creep'}.`)
+    else if (previous.spawning) lines.push(`${name} finished spawning ${previous.spawning.name || 'a creep'}.`)
+  }
+  return lines
+}
+
+const userName = (users, id) => id ? users[id]?.username || id : null
+
+function controlChanges(previous, current, patch, name, users) {
+  const lines = []
+  if (patch.user !== undefined && previous.user !== current.user) {
+    const username = userName(users, current.user)
+    lines.push(username ? `${name} is now owned by ${username}.` : `${name} became neutral.`)
+  }
+  if (patch.reservation !== undefined && JSON.stringify(previous.reservation) !== JSON.stringify(current.reservation)) {
+    const username = userName(users, current.reservation?.user)
+    lines.push(username ? `${name} is now reserved by ${username}.` : `${name} is no longer reserved.`)
+  }
+  if (patch.safeMode !== undefined && Boolean(previous.safeMode) !== Boolean(current.safeMode)) {
+    lines.push(`${name} safe mode ${current.safeMode ? 'activated' : 'ended'}.`)
+  }
+  return lines
+}
+
 export function describeRoomChanges(state, patches, users = {}, options = {}) {
   const lines = []
   for (const [id, patch] of Object.entries(patches || {})) {
     const previous = state.get(id)
-    const currentPosition = patch === null ? previous : { ...previous, ...patch }
-    const onTargetTile = options.targetPosition && [previous, currentPosition].some(object =>
-      object?.x === options.targetPosition.x && object?.y === options.targetPosition.y)
+    const current = patch === null ? previous : { _id: id, ...previous, ...patch }
+    const onTargetTile = onTile([previous, current], options.targetPosition)
     const detailed = options.verbose || options.targetId === id || onTargetTile
     if (options.targetId && options.targetId !== id) continue
     if (options.targetPosition && !onTargetTile) continue
@@ -148,51 +209,17 @@ export function describeRoomChanges(state, patches, users = {}, options = {}) {
       continue
     }
 
-    const current = { _id: id, ...previous, ...patch }
     const name = objectName(current)
     if (!previous) {
       lines.push(`${name} appeared at ${position(current)}.`)
       continue
     }
-    if (detailed && (patch.x != null || patch.y != null) && (previous.x !== current.x || previous.y !== current.y)) {
-      lines.push(`${name} moved ${position(previous)} -> ${position(current)}.`)
-    }
-    if (patch.hits != null && previous.hits != null && previous.hits !== current.hits) {
-      const change = current.hits - previous.hits
-      if (detailed || change < 0 || ['creep', 'powerCreep'].includes(current.type)) {
-        lines.push(`${name} ${change < 0 ? 'lost' : 'recovered'} ${amount(Math.abs(change))} hits (${amount(current.hits)}/${amount(current.hitsMax)}).`)
-      }
-    }
-    if (detailed && (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null)) {
-      const before = resources(previous)
-      const after = resources(current)
-      for (const resource of new Set([...Object.keys(before), ...Object.keys(after)])) {
-        if (before[resource] !== after[resource]) {
-          lines.push(`${name} ${resource} changed ${amount(before[resource] ?? 0)} -> ${amount(after[resource] ?? 0)}.`)
-        }
-      }
-    }
-    if (detailed && patch.progress != null && previous.progress != null && previous.progress !== current.progress) {
-      lines.push(`${name} progress changed ${amount(previous.progress)} -> ${amount(current.progress)}.`)
-    }
-    if (patch.level != null && previous.level != null && previous.level !== current.level) {
-      lines.push(`${name} reached level ${current.level}.`)
-    }
-    if (patch.spawning !== undefined && Boolean(previous.spawning) !== Boolean(current.spawning)) {
-      if (current.spawning) lines.push(`${name} started spawning ${current.spawning.name || 'a creep'}.`)
-      else if (previous.spawning) lines.push(`${name} finished spawning ${previous.spawning.name || 'a creep'}.`)
-    }
-    if (patch.user !== undefined && previous.user !== current.user) {
-      const username = current.user ? users[current.user]?.username || current.user : null
-      lines.push(username ? `${name} is now owned by ${username}.` : `${name} became neutral.`)
-    }
-    if (patch.reservation !== undefined && JSON.stringify(previous.reservation) !== JSON.stringify(current.reservation)) {
-      const username = current.reservation?.user && (users[current.reservation.user]?.username || current.reservation.user)
-      lines.push(username ? `${name} is now reserved by ${username}.` : `${name} is no longer reserved.`)
-    }
-    if (patch.safeMode !== undefined && Boolean(previous.safeMode) !== Boolean(current.safeMode)) {
-      lines.push(`${name} safe mode ${current.safeMode ? 'activated' : 'ended'}.`)
-    }
+    lines.push(
+      ...movementAndDamage(previous, current, patch, name, detailed),
+      ...resourceAndProgress(previous, current, patch, name, detailed),
+      ...lifecycleChanges(previous, current, patch, name),
+      ...controlChanges(previous, current, patch, name, users)
+    )
   }
   mergeRoomObjects(state, patches)
   return lines
@@ -219,6 +246,11 @@ export function roomsAround(center, radius) {
   return rooms
 }
 
+function mapGlyph(room) {
+  if (room?.status && room.status !== 'normal') return '#'
+  return room?.own ? String(room.own.level ?? 0) : '.'
+}
+
 export function renderWorldMap(center, radius, response) {
   const origin = roomNameToCoordinates(center)
   const stats = response?.stats || {}
@@ -231,7 +263,7 @@ export function renderWorldMap(center, radius, response) {
     for (let x = origin.x - radius; x <= origin.x + radius; x++) {
       const name = coordinatesToRoomName(x, y)
       const room = stats[name]
-      let glyph = room?.status && room.status !== 'normal' ? '#' : room?.own ? String(room.own.level ?? 0) : '.'
+      let glyph = mapGlyph(room)
       if (name === center) glyph = `[${glyph}]`
       else glyph = ` ${glyph} `
       row.push(glyph)

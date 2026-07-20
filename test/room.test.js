@@ -113,6 +113,36 @@ test('reports routine deltas only for a verbose or explicitly watched object', (
   ])
 })
 
+test('reports strategic room transitions in a stable order', () => {
+  const state = new Map([['controller', {
+    _id: 'controller', type: 'controller', x: 1, y: 1,
+    hits: 100, hitsMax: 100, store: { energy: 1 }, progress: 10, progressTotal: 100,
+    level: 1, spawning: null, user: 'old', reservation: { user: 'old' }, safeMode: null
+  }]])
+  const lines = describeRoomChanges(state, { controller: {
+    x: 2, hits: 90, store: { energy: 2 }, progress: 20, level: 2,
+    spawning: { name: 'Scout' }, user: 'new', reservation: null, safeMode: 100
+  } }, { new: { username: 'Ada' } }, { verbose: true })
+  assert.deepEqual(lines, [
+    'controller moved 1,1 -> 2,1.',
+    'controller lost 10 hits (90/100).',
+    'controller energy changed 1 -> 2.',
+    'controller progress changed 10 -> 20.',
+    'controller reached level 2.',
+    'controller started spawning Scout.',
+    'controller is now owned by Ada.',
+    'controller is no longer reserved.',
+    'controller safe mode activated.'
+  ])
+  assert.deepEqual(describeRoomChanges(state, { controller: {
+    spawning: null, user: null, safeMode: null
+  } }), [
+    'controller finished spawning Scout.',
+    'controller became neutral.',
+    'controller safe mode ended.'
+  ])
+})
+
 test('limits a tile watch to objects interacting with that position', () => {
   const state = new Map([
     ['near', { _id: 'near', type: 'creep', name: 'Near', x: 1, y: 1 }],
