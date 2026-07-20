@@ -37,8 +37,9 @@ export function shardItems(shards, shard) {
 }
 
 export function marketItems(response, shard) {
-  const groups = shard ? [...new Set([shard, 'intershard'])] : Object.keys(response || {})
-  return groups.flatMap(group => Array.isArray(response?.[group]) ? response[group] : [])
+  const orders = response?.shards || response || {}
+  const groups = shard ? [...new Set([shard, 'intershard'])] : Object.keys(orders)
+  return groups.flatMap(group => Array.isArray(orders[group]) ? orders[group] : [])
 }
 
 export async function playerId(api, username) {

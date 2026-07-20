@@ -15,7 +15,7 @@ test('selects one shard or combines all shard results', () => {
   assert.deepEqual(shardItems(shards, 'missing'), [])
 })
 
-test('selects world and account-wide market orders from the top-level response', () => {
+test('selects world and account-wide market orders across response shapes', () => {
   const response = {
     ok: 1,
     shard0: [{ _id: 'world' }],
@@ -24,6 +24,7 @@ test('selects world and account-wide market orders from the top-level response',
   }
   assert.deepEqual(marketItems(response, 'shard0').map(order => order._id), ['world', 'account-wide'])
   assert.deepEqual(marketItems(response).map(order => order._id), ['world', 'other-world', 'account-wide'])
+  assert.deepEqual(marketItems({ shards: response }, 'shard0').map(order => order._id), ['world', 'account-wide'])
 })
 
 test('resolves message recipients from usernames to database IDs', async () => {
