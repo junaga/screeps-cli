@@ -5,14 +5,25 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
-import { createClient, discoverShard, shardItems } from '../src/client.js'
+import { createClient, discoverShard, marketItems, shardItems } from '../src/client.js'
 import { writeConfig } from '../src/config.js'
 
 test('selects one shard or combines all shard results', () => {
-  const response = { shards: { shard0: ['W1N1'], shard3: ['E2S2'] } }
-  assert.deepEqual(shardItems(response, 'shard3'), ['E2S2'])
-  assert.deepEqual(shardItems(response), ['W1N1', 'E2S2'])
-  assert.deepEqual(shardItems(response, 'missing'), [])
+  const shards = { shard0: ['W1N1'], shard3: ['E2S2'] }
+  assert.deepEqual(shardItems(shards, 'shard3'), ['E2S2'])
+  assert.deepEqual(shardItems(shards), ['W1N1', 'E2S2'])
+  assert.deepEqual(shardItems(shards, 'missing'), [])
+})
+
+test('selects world and account-wide market orders from the top-level response', () => {
+  const response = {
+    ok: 1,
+    shard0: [{ _id: 'world' }],
+    shard3: [{ _id: 'other-world' }],
+    intershard: [{ _id: 'account-wide' }]
+  }
+  assert.deepEqual(marketItems(response, 'shard0').map(order => order._id), ['world', 'account-wide'])
+  assert.deepEqual(marketItems(response).map(order => order._id), ['world', 'other-world', 'account-wide'])
 })
 
 test('discovers an occupied shard, then falls back to the busiest shard', async () => {

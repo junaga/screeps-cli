@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
 import { assertGameAction, powerCreepAction, runGameExpression } from './action.js'
-import { createClient, output, shardItems } from './client.js'
+import { createClient, marketItems, output, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
@@ -122,7 +122,7 @@ async function empireOverview({ api, connection, shard }, options) {
       credits: me.money ?? 0
     },
     worldStatus: world.status,
-    rooms: shardItems(rooms, shard),
+    rooms: shardItems(rooms.shards, shard),
     unreadMessages: unread.count || 0,
     attention
   }
@@ -285,7 +285,7 @@ async function defaultRoom(api, explicit, shard) {
   if (explicit) return roomName(explicit)
   const me = await api.authMe()
   const response = await api.userRooms(me._id)
-  const room = shardItems(response, shard)[0]
+  const room = shardItems(response.shards, shard)[0]
   if (!room) throw new Error('You have no room to use as a default.')
   return room
 }
@@ -307,7 +307,7 @@ async function watchRooms(api, targets, options) {
   let targetInfo = { kind: 'empire' }
   if (!targets.target) {
     const me = await api.authMe()
-    rooms.push(...shardItems(await api.userRooms(me._id), options.shard))
+    rooms.push(...shardItems((await api.userRooms(me._id)).shards, options.shard))
   } else {
     const parsed = parseTarget(targets.target, targets.position)
     if (parsed.kind === 'room' || parsed.kind === 'tile') {
@@ -555,7 +555,7 @@ export async function run(program, argv) {
         return
       }
       const [me, orders] = await Promise.all([api.authMe(), api.gameMarketMyOrders()])
-      const result = { credits: me.money || 0, orders: shardItems(orders, options.shard) }
+      const result = { credits: me.money || 0, orders: marketItems(orders, options.shard) }
       if (options.json) output(result, { json: true })
       else output(`${displayNumber(result.credits)} credits\n${formatMyOrders(result.orders)}`)
     }))

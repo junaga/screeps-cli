@@ -31,9 +31,14 @@ export async function createClient(options = {}) {
   return { api, connection, shard }
 }
 
-export function shardItems(response, shard) {
-  const shards = response?.shards || {}
+export function shardItems(shards, shard) {
+  shards ||= {}
   return shard ? shards[shard] || [] : Object.values(shards).flat()
+}
+
+export function marketItems(response, shard) {
+  const groups = shard ? [...new Set([shard, 'intershard'])] : Object.keys(response || {})
+  return groups.flatMap(group => Array.isArray(response?.[group]) ? response[group] : [])
 }
 
 export async function discoverShard(api) {
