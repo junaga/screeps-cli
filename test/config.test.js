@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { chmod, mkdtemp, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -44,6 +44,14 @@ test('selects saved credentials for the environment server itself', async t => {
 
   const { connection } = await getConnection()
   assert.equal(connection.token, 'second-secret')
+})
+
+test('does not change permissions on a custom config parent', { skip: process.platform === 'win32' }, async t => {
+  const path = await isolatedConfig(t)
+  const directory = join(path, '..')
+  await chmod(directory, 0o755)
+  await writeConfig({ servers: {} })
+  assert.equal((await stat(directory)).mode & 0o777, 0o755)
 })
 
 test('normalizes safe server URLs and rejects embedded credentials', () => {

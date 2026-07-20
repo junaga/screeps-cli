@@ -28,7 +28,6 @@ export async function writeConfig(config) {
   const path = configPath()
   const directory = dirname(path)
   await mkdir(directory, { recursive: true, mode: 0o700 })
-  await chmod(directory, 0o700)
   const temporary = `${path}.${process.pid}.tmp`
   try {
     await writeFile(temporary, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 })
