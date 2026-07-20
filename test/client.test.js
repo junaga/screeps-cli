@@ -7,7 +7,7 @@ import test from 'node:test'
 import { WebSocketServer } from 'ws'
 import {
   createClient, createHttpClient, createLiveSocket, discoverShard,
-  isOfficialServerUrl, marketItems, playerId, shardItems
+  isOfficialServerUrl, marketItems, openRoomSubscription, playerId, shardItems
 } from '../src/client.js'
 import { writeConfig } from '../src/config.js'
 
@@ -122,6 +122,31 @@ test('reconnects successfully and restores each subscription once', async t => {
     new Promise((_resolve, reject) => setTimeout(() => reject(new Error('reconnect timed out')), 3000))
   ])
   assert.deepEqual(subscriptions, [1, 2])
+})
+
+test('waits for a room snapshot and surfaces subscription limits', async () => {
+  const listeners = new Map()
+  const socket = {
+    on(name, callback) { listeners.set(name, callback) },
+    off(name, callback) { if (listeners.get(name) === callback) listeners.delete(name) },
+    emit(name, value) { listeners.get(name)?.(value) },
+    async subscribeRoom(_room, _shard, callback) { this.callback = callback },
+    async unsubscribeRoom() { this.unsubscribed = true }
+  }
+  const opening = openRoomSubscription(socket, 'W1N1', 'shard0', () => {}, { timeout: 100 })
+  socket.emit('message', { type: 'server', path: 'err@room:shard0/W1N1', data: ['subscribe limit reached'] })
+  await assert.rejects(opening, /subscribe limit reached/)
+  assert.equal(socket.unsubscribed, true)
+
+  const updates = []
+  const successful = openRoomSubscription(socket, 'W2N2', 'shard0', event => updates.push(event), { timeout: 100 })
+  socket.callback({ data: { objects: { first: { type: 'source' } } } })
+  const subscription = await successful
+  socket.callback({ data: { objects: { second: { type: 'creep' } } } })
+  assert.deepEqual(updates, [])
+  subscription.start()
+  assert.equal(updates.length, 1)
+  await subscription.close()
 })
 
 test('creates a fresh live session without persisting its rotation', async t => {

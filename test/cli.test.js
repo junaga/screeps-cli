@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import { createServer } from 'node:http'
 import test from 'node:test'
 import { promisify } from 'node:util'
@@ -7,6 +7,33 @@ import { WebSocketServer } from 'ws'
 
 const execute = promisify(execFile)
 const project = new URL('../', import.meta.url)
+
+function streamCli(args, env, ready, timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['bin.js', ...args], { cwd: project, env })
+    let stdout = ''
+    let stderr = ''
+    let stopping = false
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL')
+      reject(new Error(`streaming CLI timed out\nstdout:\n${stdout}\nstderr:\n${stderr}`))
+    }, timeout)
+    child.stdout.on('data', chunk => {
+      stdout += chunk
+      if (!stopping && ready(stdout)) {
+        stopping = true
+        child.kill('SIGINT')
+      }
+    })
+    child.stderr.on('data', chunk => { stderr += chunk })
+    child.once('error', reject)
+    child.once('exit', code => {
+      clearTimeout(timer)
+      if (code && !stopping) reject(new Error(`CLI exited ${code}\n${stderr}`))
+      else resolve({ stdout, stderr })
+    })
+  })
+}
 
 function send(response, body, status = 200) {
   response.writeHead(status, { 'Content-Type': 'application/json' })
@@ -118,4 +145,112 @@ test('runs HTTP-backed game commands against their real client contracts', async
   assert.deepEqual(requests.find(item => item.path === '/api/game/map-stats').body.rooms, ['W1N1'])
   assert.match(requests.find(item => item.path === '/api/user/console').body.expression,
     /Game\.powerCreeps\["Operator"\]\.delete\(\)/)
+})
+
+test('starts room watches from the authoritative socket snapshot', async t => {
+  const requests = []
+  const server = createServer((request, response) => {
+    requests.push(request.url)
+    if (request.url.startsWith('/api/game/time')) return send(response, { ok: 1, time: 100 })
+    return send(response, { error: 'unexpected route' }, 404)
+  })
+  const sockets = new WebSocketServer({ server })
+  sockets.on('connection', socket => socket.on('message', message => {
+    const text = message.toString()
+    if (text === 'auth test-token') socket.send('auth ok rotated-token')
+    if (text === 'subscribe room:W1N1') {
+      socket.send(JSON.stringify(['room:W1N1', {
+        gameTime: 101,
+        objects: { source: { type: 'source', x: 1, y: 1, energy: 3000 } },
+        users: {}
+      }]))
+      setImmediate(() => socket.send(JSON.stringify(['room:W1N1', {
+        gameTime: 102,
+        objects: { site: { type: 'constructionSite', x: 2, y: 3, progress: 0, progressTotal: 100 } }
+      }])))
+    }
+  }))
+  await new Promise(resolve => server.listen(0, resolve))
+  t.after(() => new Promise(resolve => server.close(resolve)))
+
+  const env = {
+    ...process.env,
+    SCREEPS_URL: `http://127.0.0.1:${server.address().port}`,
+    SCREEPS_TOKEN: 'test-token',
+    SCREEPS_SHARD: 'shard0',
+    SCREEPS_CLI_CONFIG: '/does/not/exist'
+  }
+  const result = await streamCli(['watch', 'W1N1', '--json'], env, output => output.includes('construction site appeared'))
+  const lines = result.stdout.trim().split('\n').map(JSON.parse)
+  assert.deepEqual(lines[0], {
+    type: 'start', tick: 101, room: 'W1N1', target: { kind: 'room', room: 'W1N1' }
+  })
+  assert.equal(lines[1].tick, 102)
+  assert.match(lines[1].message, /construction site appeared/)
+  assert.equal(requests.some(path => path.startsWith('/api/game/room-objects')), false)
+})
+
+test('follows an object across a room border', async t => {
+  const objectId = 'a'.repeat(24)
+  let activeSocket
+  const server = createServer(async (request, response) => {
+    const url = new URL(request.url, 'http://localhost')
+    if (url.pathname === '/api/auth/me') return send(response, { ok: 1, _id: 'me', username: 'Ada' })
+    if (url.pathname === '/api/auth/query-token') return send(response, {
+      ok: 1, _id: 'token-id', token: { full: true, token: 'test-token' }
+    })
+    if (url.pathname === '/api/game/time') return send(response, { ok: 1, time: 200 })
+    if (url.pathname === '/api/user/console') {
+      let text = ''
+      for await (const chunk of request) text += chunk
+      const marker = JSON.parse(text).expression.match(/screeps-cli:[0-9a-f-]+:/)?.[0]
+      send(response, { ok: 1 })
+      setImmediate(() => activeSocket.send(JSON.stringify(['user:me/console', {
+        shard: 'shard0',
+        messages: { log: [`${marker}${JSON.stringify({ value: {
+          id: objectId, type: 'creep', name: 'Scout', pos: { room: 'W0N0', x: 49, y: 25 }
+        } })}`] }
+      }])))
+      return
+    }
+    return send(response, { error: `unexpected route ${url.pathname}` }, 404)
+  })
+  const sockets = new WebSocketServer({ server })
+  sockets.on('connection', socket => {
+    activeSocket = socket
+    socket.on('message', message => {
+      const text = message.toString()
+      if (text === 'auth test-token') socket.send('auth ok rotated-token')
+      if (text === 'subscribe room:W0N0') {
+        socket.send(JSON.stringify(['room:W0N0', {
+          gameTime: 201,
+          objects: { [objectId]: { type: 'creep', name: 'Scout', x: 49, y: 25 } },
+          users: {}
+        }]))
+        setImmediate(() => socket.send(JSON.stringify(['room:W0N0', {
+          gameTime: 202, objects: { [objectId]: null }
+        }])))
+      }
+      if (text === 'subscribe room:E0N0') {
+        socket.send(JSON.stringify(['room:E0N0', {
+          gameTime: 202,
+          objects: { [objectId]: { type: 'creep', name: 'Scout', x: 0, y: 25 } },
+          users: {}
+        }]))
+      }
+    })
+  })
+  await new Promise(resolve => server.listen(0, resolve))
+  t.after(() => new Promise(resolve => server.close(resolve)))
+
+  const env = {
+    ...process.env,
+    SCREEPS_URL: `http://127.0.0.1:${server.address().port}`,
+    SCREEPS_TOKEN: 'test-token',
+    SCREEPS_SHARD: 'shard0',
+    SCREEPS_CLI_CONFIG: '/does/not/exist'
+  }
+  const result = await streamCli(['watch', objectId], env, output => output.includes('W0N0 49,25 -> E0N0 0,25'))
+  assert.match(result.stdout, /Watching creep Scout in W0N0 from tick 201\./)
+  assert.match(result.stdout, /creep Scout moved W0N0 49,25 -> E0N0 0,25\./)
 })

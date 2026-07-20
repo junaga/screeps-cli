@@ -199,7 +199,7 @@ export function describeRoomChanges(state, patches, users = {}, options = {}) {
   const lines = []
   for (const [id, patch] of Object.entries(patches || {})) {
     const previous = state.get(id)
-    const current = patch === null ? previous : { _id: id, ...previous, ...patch }
+    const current = patch === null ? previous : applyObjectPatch(previous, patch, id)
     const onTargetTile = onTile([previous, current], options.targetPosition)
     const detailed = options.verbose || options.targetId === id || onTargetTile
     if (options.targetId && options.targetId !== id) continue
@@ -246,6 +246,17 @@ export function roomsAround(center, radius) {
   return rooms
 }
 
+export function roomsAcrossBorder(room, position) {
+  const origin = roomNameToCoordinates(room)
+  const horizontal = position?.x === 0 ? -1 : position?.x === 49 ? 1 : 0
+  const vertical = position?.y === 0 ? -1 : position?.y === 49 ? 1 : 0
+  const offsets = []
+  if (horizontal && vertical) offsets.push([horizontal, vertical])
+  if (horizontal) offsets.push([horizontal, 0])
+  if (vertical) offsets.push([0, vertical])
+  return offsets.map(([x, y]) => coordinatesToRoomName(origin.x + x, origin.y + y))
+}
+
 function mapGlyph(room) {
   if (room?.status && room.status !== 'normal') return '#'
   return room?.own ? String(room.own.level ?? 0) : '.'
@@ -278,7 +289,34 @@ export function renderWorldMap(center, radius, response) {
 export function mergeRoomObjects(state, patches) {
   for (const [id, patch] of Object.entries(patches || {})) {
     if (patch === null) state.delete(id)
-    else state.set(id, { ...state.get(id), ...patch })
+    else state.set(id, applyObjectPatch(state.get(id), patch, id))
   }
   return state
+}
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function mergeNested(previous, patch) {
+  if (Array.isArray(patch)) return patch.map(value => mergeNested(undefined, value))
+  if (!isRecord(patch)) return patch
+  const target = Array.isArray(previous) ? [...previous] : { ...(isRecord(previous) ? previous : {}) }
+  for (const [key, value] of Object.entries(patch)) target[key] = mergeNested(target[key], value)
+  return target
+}
+
+function applyObjectPatch(previous, patch, id) {
+  return { _id: id, ...mergeNested(previous, patch) }
+}
+
+export function replaceRoomObjects(state, objects) {
+  state.clear()
+  if (Array.isArray(objects)) {
+    for (const object of objects) {
+      if (object?._id) state.set(object._id, mergeNested(undefined, object))
+    }
+    return state
+  }
+  return mergeRoomObjects(state, objects)
 }

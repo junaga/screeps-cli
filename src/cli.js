@@ -3,11 +3,14 @@ import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
 import { assertGameAction, powerCreepAction, runGameExpression } from './action.js'
-import { createClient, marketItems, output, playerId, shardItems } from './client.js'
+import { createClient, marketItems, openRoomSubscription, output, playerId, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatNumber, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
-import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
+import {
+  decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame,
+  renderRoom, renderTile, renderWorldMap, replaceRoomObjects, roomsAcrossBorder, roomsAround
+} from './room.js'
 import { login } from './token.js'
 import { integer, pageNumber, parseTarget, playerName, positiveNumber, roomName } from './validation.js'
 import { DOCS_MANIFEST, formatVersion } from './version.js'
@@ -41,16 +44,29 @@ function respond(options, json, text) {
   output(options.json ? json : text, options)
 }
 
-async function waitForInterrupt(socket) {
-  await new Promise(resolve => {
-    const stop = () => {
+async function waitForInterrupt(socket, completion) {
+  await new Promise((resolve, reject) => {
+    const cleanup = () => {
       process.removeListener('SIGINT', stop)
       process.removeListener('SIGTERM', stop)
+      socket.off('reconnectFailed', fail)
+      socket.off('subscriptionFailed', fail)
+    }
+    const stop = () => {
+      cleanup()
       socket.disconnect()
       resolve()
     }
+    const fail = error => {
+      cleanup()
+      socket.disconnect()
+      reject(error)
+    }
     process.once('SIGINT', stop)
     process.once('SIGTERM', stop)
+    socket.once('reconnectFailed', fail)
+    socket.once('subscriptionFailed', fail)
+    completion?.then(stop, fail)
   })
 }
 
@@ -134,9 +150,12 @@ async function tileSnapshot(api, target, options, ownUserId) {
 }
 
 async function liveRoom(api, room, options, ownUserId) {
-  const data = await roomData(api, room, options.shard)
-  const state = new Map(data.objects.map(object => [object._id, object]))
-  let gameTime = data.tick
+  const [terrainResponse, timeResponse] = await Promise.all([
+    api.gameRoomTerrain(room, options.shard), api.gameTime(options.shard)
+  ])
+  const terrain = decodeTerrain(terrainResponse)
+  const state = new Map()
+  let gameTime = timeResponse.time
   let visible = false
   const draw = () => {
     if (!visible) return
@@ -147,7 +166,7 @@ async function liveRoom(api, room, options, ownUserId) {
     }
     stdout.write(`${clear}${renderLiveRoomFrame({
       name: room,
-      terrain: data.terrain,
+      terrain,
       objects: [...state.values()],
       ownUserId,
       gameTime,
@@ -160,12 +179,17 @@ async function liveRoom(api, room, options, ownUserId) {
     draw()
   }
 
+  let subscription
   try {
-    await api.socket.subscribeRoom(room, options.shard, update)
     await api.socket.connect()
-  } catch {
+    subscription = await openRoomSubscription(api.socket, room, options.shard, update)
+    gameTime = subscription.initial.data.gameTime ?? gameTime
+    replaceRoomObjects(state, subscription.initial.data.objects)
+    subscription.start()
+  } catch (error) {
     api.socket.disconnect()
-    throw new Error('Live room view is unavailable. Run screeps login to refresh the live session.')
+    if (error.code === 'SCREEPS_ROOM_SUBSCRIPTION') throw error
+    throw new Error('Live room view is unavailable. Run screeps login to refresh the live session.', { cause: error })
   }
 
   visible = true
@@ -261,6 +285,8 @@ async function watchRooms(api, targets, options) {
   let targetPosition
   let targetLabel = 'your empire'
   let targetInfo = { kind: 'empire' }
+  let objectStart
+  let targetObject
   if (!targets.target) {
     const me = await api.authMe()
     rooms.push(...shardItems((await api.userRooms(me._id)).shards, options.shard))
@@ -279,6 +305,8 @@ async function watchRooms(api, targets, options) {
       const object = await objectSnapshot(api, parsed.id, { ...options, silent: true })
       if (!object?.pos?.room) throw new Error(`Object ${parsed.id} has no room position.`)
       rooms.push(object.pos.room)
+      objectStart = object.pos
+      targetObject = object
       targetId = parsed.id
       targetLabel = `${object.type}${object.name ? ` ${object.name}` : ''} in ${object.pos.room}`
       targetInfo = { kind: 'object', id: parsed.id, room: object.pos.room, type: object.type, name: object.name ?? null }
@@ -289,17 +317,108 @@ async function watchRooms(api, targets, options) {
   const states = new Map()
   const users = new Map()
   const ticks = new Map()
-  for (const room of rooms) {
-    const [objects, time] = await Promise.all([api.gameRoomObjects(room, options.shard), api.gameTime(options.shard)])
-    states.set(room, new Map(objects.objects.map(object => [object._id, object])))
-    users.set(room, { ...objects.users })
-    ticks.set(room, time.time)
-  }
+  const subscriptions = new Map()
+  const fallbackTick = (await api.gameTime(options.shard)).time
+  let currentObjectRoom = targetId ? rooms[0] : null
+  let eventQueue = Promise.resolve()
+  let finishObjectWatch
+  const objectFinished = targetId && new Promise(resolve => { finishObjectWatch = resolve })
 
   const announce = event => {
     if (options.json) output({ type: 'event', ...event }, { ndjson: true })
     else output(`${formatNumber(event.tick)}  ${rooms.length > 1 ? `${event.room}  ` : ''}${event.message}`)
   }
+  const destinationRooms = (room, previous) => {
+    const state = states.get(room)
+    const portal = [...state.values()].find(object => object.type === 'portal' && object.x === previous.x && object.y === previous.y)
+    const destination = portal?.destination
+    const destinationRoom = typeof destination === 'string' ? destination : destination?.room || destination?.roomName
+    const candidates = destinationRoom ? [destinationRoom] : roomsAcrossBorder(room, previous)
+    return [...new Set(candidates)]
+  }
+
+  const processPatch = async (room, event) => {
+    if (targetId && room !== currentObjectRoom) return
+    const tick = event.data.gameTime ?? ticks.get(room)
+    ticks.set(room, tick)
+    const state = states.get(room)
+    const previous = targetId && state.get(targetId)
+    const targetPatch = targetId && event.data.objects?.[targetId]
+
+    if (options.raw) {
+      if (options.json) output({ type: 'patch', tick, room, data: event.data }, { ndjson: true })
+      else output(`${tick}  ${room}  ${JSON.stringify(event.data)}`)
+    }
+
+    if (targetId && targetPatch === null) {
+      const candidates = destinationRooms(room, previous || objectStart)
+      await subscriptions.get(room)?.close()
+      subscriptions.delete(room)
+      for (const candidate of candidates) {
+        const candidateSubscription = await openRoomSubscription(api.socket, candidate, options.shard, receive(candidate))
+        const candidateState = new Map()
+        replaceRoomObjects(candidateState, candidateSubscription.initial.data.objects)
+        if (!candidateState.has(targetId)) {
+          await candidateSubscription.close()
+          continue
+        }
+        states.set(candidate, candidateState)
+        users.set(candidate, { ...(candidateSubscription.initial.data.users || {}) })
+        ticks.set(candidate, candidateSubscription.initial.data.gameTime ?? tick)
+        subscriptions.set(candidate, candidateSubscription)
+        currentObjectRoom = candidate
+        const current = candidateState.get(targetId)
+        announce({
+          tick: ticks.get(candidate),
+          room: candidate,
+          message: `${targetObject.type}${targetObject.name ? ` ${targetObject.name}` : ''} moved ${room} ${previous.x},${previous.y} -> ${candidate} ${current.x},${current.y}.`
+        })
+        candidateSubscription.start()
+        return
+      }
+      if (!options.raw) {
+        const lines = describeRoomChanges(state, event.data.objects, users.get(room), { verbose: options.verbose, targetId })
+        for (const message of lines) announce({ tick, room, message })
+      } else mergeRoomObjects(state, event.data.objects)
+      finishObjectWatch()
+      return
+    }
+
+    if (options.raw) {
+      mergeRoomObjects(state, event.data.objects)
+      return
+    }
+    Object.assign(users.get(room), event.data.users || {})
+    const lines = describeRoomChanges(state, event.data.objects, users.get(room), { verbose: options.verbose, targetId, targetPosition })
+    for (const message of lines) announce({ tick, room, message })
+  }
+
+  const receive = room => event => {
+    eventQueue = eventQueue.then(() => processPatch(room, event))
+      .catch(error => api.socket.emit('subscriptionFailed', error))
+  }
+
+  try {
+    await api.socket.connect()
+    for (const room of rooms) {
+      const subscription = await openRoomSubscription(api.socket, room, options.shard, receive(room))
+      const state = new Map()
+      replaceRoomObjects(state, subscription.initial.data.objects)
+      states.set(room, state)
+      users.set(room, { ...(subscription.initial.data.users || {}) })
+      ticks.set(room, subscription.initial.data.gameTime ?? fallbackTick)
+      subscriptions.set(room, subscription)
+      subscription.start()
+    }
+    if (targetId && !states.get(currentObjectRoom).has(targetId)) {
+      throw new Error(`Object ${targetId} is no longer visible in ${currentObjectRoom}.`)
+    }
+  } catch (error) {
+    api.socket.disconnect()
+    if (error.code === 'SCREEPS_ROOM_SUBSCRIPTION') throw error
+    throw new Error('Live room updates are unavailable. Run screeps login to refresh the live session.', { cause: error })
+  }
+
   if (options.json) {
     for (const room of rooms) output({ type: 'start', tick: ticks.get(room), room, target: targetInfo }, { ndjson: true })
   } else if (rooms.length === 1) {
@@ -308,29 +427,7 @@ async function watchRooms(api, targets, options) {
   } else {
     output(`Watching ${targetLabel} across ${rooms.length} rooms. Press Ctrl-C to stop.`)
   }
-
-  try {
-    for (const room of rooms) {
-      await api.socket.subscribeRoom(room, options.shard, event => {
-        const tick = event.data.gameTime ?? ticks.get(room)
-        ticks.set(room, tick)
-        if (options.raw) {
-          if (options.json) output({ type: 'patch', tick, room, data: event.data }, { ndjson: true })
-          else output(`${tick}  ${room}  ${JSON.stringify(event.data)}`)
-          mergeRoomObjects(states.get(room), event.data.objects)
-          return
-        }
-        Object.assign(users.get(room), event.data.users || {})
-        const lines = describeRoomChanges(states.get(room), event.data.objects, users.get(room), { verbose: options.verbose, targetId, targetPosition })
-        for (const message of lines) announce({ tick, room, message })
-      })
-    }
-    await api.socket.connect()
-  } catch {
-    api.socket.disconnect()
-    throw new Error('Live room updates are unavailable. Run screeps login to refresh the live session.')
-  }
-  await waitForInterrupt(api.socket)
+  await waitForInterrupt(api.socket, objectFinished)
 }
 
 function formatCodeDiff(diff) {

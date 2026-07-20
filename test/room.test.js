@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { coordinatesToRoomName, decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, roomNameToCoordinates, roomsAround } from '../src/room.js'
+import {
+  coordinatesToRoomName, decodeTerrain, describeRoomChanges, mergeRoomObjects,
+  renderLiveRoomFrame, renderRoom, renderTile, replaceRoomObjects,
+  roomNameToCoordinates, roomsAcrossBorder, roomsAround
+} from '../src/room.js'
 
 test('decodes the compact 2500-character terrain format', () => {
   const encoded = `${'0'.repeat(51)}1${'0'.repeat(2448)}`
@@ -29,6 +33,9 @@ test('converts room names across world axes', () => {
     'W0S0', 'E0S0', 'E1S0',
     'W0S1', 'E0S1', 'E1S1'
   ])
+  assert.deepEqual(roomsAcrossBorder('W0N0', { x: 0, y: 25 }), ['W1N0'])
+  assert.deepEqual(roomsAcrossBorder('W0N0', { x: 49, y: 0 }), ['E0N1', 'E0N0', 'W0N1'])
+  assert.deepEqual(roomsAcrossBorder('W0N0', { x: 25, y: 25 }), [])
 })
 
 test('merges partial socket updates and removes vanished objects', () => {
@@ -37,6 +44,37 @@ test('merges partial socket updates and removes vanished objects', () => {
   assert.deepEqual(state.get('a'), { _id: 'a', type: 'creep', x: 2, y: 1, hits: 90 })
   mergeRoomObjects(state, { a: null })
   assert.equal(state.has('a'), false)
+})
+
+test('deeply merges nested room diffs without erasing unchanged state', () => {
+  const state = new Map([['a', {
+    _id: 'a', type: 'creep', x: 1, y: 1,
+    store: { energy: 1000, H: 500 },
+    reservation: { user: 'me', endTime: 200 },
+    body: [{ type: 'move', hits: 100 }, { type: 'work', hits: 100 }]
+  }]])
+  mergeRoomObjects(state, { a: {
+    store: { energy: 900 },
+    reservation: { endTime: 201 },
+    body: { 1: { hits: 50 } }
+  } })
+  assert.deepEqual(state.get('a').store, { energy: 900, H: 500 })
+  assert.deepEqual(state.get('a').reservation, { user: 'me', endTime: 201 })
+  assert.deepEqual(state.get('a').body, [{ type: 'move', hits: 100 }, { type: 'work', hits: 50 }])
+})
+
+test('replaces stale room state with an authoritative socket snapshot', () => {
+  const state = new Map([
+    ['ghost', { _id: 'ghost', type: 'creep' }],
+    ['changed', { _id: 'changed', type: 'spawn', hits: 100 }]
+  ])
+  replaceRoomObjects(state, {
+    changed: { type: 'spawn', hits: 90 },
+    source: { type: 'source', x: 10, y: 20 }
+  })
+  assert.equal(state.has('ghost'), false)
+  assert.deepEqual(state.get('changed'), { _id: 'changed', type: 'spawn', hits: 90 })
+  assert.deepEqual(state.get('source'), { _id: 'source', type: 'source', x: 10, y: 20 })
 })
 
 test('renders terrain and objects at their coordinates', () => {

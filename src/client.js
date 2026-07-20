@@ -222,6 +222,78 @@ export async function discoverShard(api) {
   return shard
 }
 
+function roomSubscriptionError(room, event) {
+  if (event?.type !== 'server') return null
+  const suffix = event.path?.match(/^err@room:(.+)$/)?.[1]
+  if (!suffix || (suffix !== room && !suffix.endsWith(`/${room}`))) return null
+  const detail = Array.isArray(event.data) ? event.data.join(' ') : String(event.data || 'rejected')
+  const error = new Error(`The server refused live updates for ${room}: ${detail}.`)
+  error.code = 'SCREEPS_ROOM_SUBSCRIPTION'
+  return error
+}
+
+export async function openRoomSubscription(socket, room, shard, onUpdate, { timeout = 10_000 } = {}) {
+  let initial
+  let rejectInitial
+  let resolveInitial
+  let started = false
+  const queued = []
+  const first = new Promise((resolve, reject) => {
+    resolveInitial = resolve
+    rejectInitial = reject
+  })
+  const receive = event => {
+    if (!initial) {
+      initial = event
+      resolveInitial(event)
+    } else if (started) onUpdate(event)
+    else queued.push(event)
+  }
+  const receiveMessage = event => {
+    const error = roomSubscriptionError(room, event)
+    if (!error) return
+    if (!initial) rejectInitial(error)
+    else socket.emit('subscriptionFailed', error)
+  }
+  const reconnectFailed = error => rejectInitial(error)
+  socket.on('message', receiveMessage)
+  socket.on('reconnectFailed', reconnectFailed)
+  await socket.subscribeRoom(room, shard, receive)
+
+  let timer
+  try {
+    const expired = new Promise((_resolve, reject) => {
+      timer = setTimeout(() => {
+        const error = new Error(`The server did not send an initial live snapshot for ${room}.`)
+        error.code = 'SCREEPS_ROOM_SUBSCRIPTION'
+        reject(error)
+      }, timeout)
+    })
+    await Promise.race([first, expired])
+  } catch (error) {
+    socket.off('message', receiveMessage)
+    socket.off('reconnectFailed', reconnectFailed)
+    await socket.unsubscribeRoom(room, shard, receive)
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+
+  return {
+    initial,
+    start() {
+      if (started) return
+      started = true
+      for (const event of queued.splice(0)) onUpdate(event)
+    },
+    async close() {
+      socket.off('message', receiveMessage)
+      socket.off('reconnectFailed', reconnectFailed)
+      await socket.unsubscribeRoom(room, shard, receive)
+    }
+  }
+}
+
 export function output(value, options = {}) {
   if (options.ndjson) {
     process.stdout.write(`${JSON.stringify(value)}\n`)
