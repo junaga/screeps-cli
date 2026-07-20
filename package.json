@@ -24,5 +24,8 @@
     "commander": "^14.0.3",
     "screeps-api": "^2.1.0",
     "ws": "^8.21.1"
+  },
+  "devDependencies": {
+    "parse5": "^8.0.1"
   }
 }

@@ -1,39 +1,24 @@
 import { dirname, join, normalize } from 'node:path/posix'
+import { parseFragment } from 'parse5'
 
-function attribute(attributes, name) {
-  const match = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i').exec(attributes)
-  return match?.[1] ?? match?.[2] ?? match?.[3]
-}
-
-function decodeEntities(value) {
-  const named = {
-    amp: '&', apos: "'", gt: '>', lt: '<', nbsp: ' ', ndash: '–', mdash: '—',
-    quot: '"', times: '×', ge: '≥', le: '≤'
+function inlineNode(node) {
+  if (node.nodeName === '#text') return node.value
+  if (!node.tagName) return ''
+  const content = (node.childNodes || []).map(inlineNode).join('')
+  const attribute = name => node.attrs.find(item => item.name === name)?.value
+  if (node.tagName === 'br') return '; '
+  if (node.tagName === 'img') {
+    const source = attribute('src')
+    return source ? `![${attribute('alt') || ''}](${source})` : ''
   }
-  return value.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, code) => {
-    if (code[0] !== '#') return named[code.toLowerCase()] ?? entity
-    const point = code[1].toLowerCase() === 'x' ? Number.parseInt(code.slice(2), 16) : Number.parseInt(code.slice(1), 10)
-    return Number.isFinite(point) ? String.fromCodePoint(point) : entity
-  })
+  if (node.tagName === 'a') return attribute('href') ? `[${content}](${attribute('href')})` : content
+  if (node.tagName === 'strong' || node.tagName === 'b') return `**${content}**`
+  if (node.tagName === 'em') return `*${content}*`
+  return content
 }
 
-function inlineMarkdown(html) {
-  let value = html
-    .replace(/<!--[^]*?-->/g, '')
-    .replace(/<br\s*\/?>/gi, '; ')
-    .replace(/<img\b([^>]*)>/gi, (_tag, attributes) => {
-      const source = attribute(attributes, 'src')
-      if (!source) return ''
-      return `![${attribute(attributes, 'alt') || ''}](${source})`
-    })
-    .replace(/<a\b([^>]*)>([^]*?)<\/a>/gi, (_tag, attributes, text) => {
-      const target = attribute(attributes, 'href')
-      return target ? `[${text}](${target})` : text
-    })
-    .replace(/<(strong|b)\b[^>]*>([^]*?)<\/\1>/gi, '**$2**')
-    .replace(/<em\b[^>]*>([^]*?)<\/em>/gi, '*$1*')
-    .replace(/<[^>]+>/g, '')
-  value = decodeEntities(value)
+function inlineNodes(nodes) {
+  const value = nodes.map(inlineNode).join('')
     .replace(/(!\[[^\]]*\]\([^)]+\))(?=\S)/g, '$1 ')
     .replace(/\s*;\s*/g, '; ')
     .replace(/\s+/g, ' ')
@@ -41,50 +26,25 @@ function inlineMarkdown(html) {
   return value.replaceAll('|', '\\|')
 }
 
+const inlineMarkdown = html => inlineNodes(parseFragment(html).childNodes)
+
+function descendants(node, tagName) {
+  return (node.childNodes || []).flatMap(child => [
+    ...(child.tagName === tagName ? [child] : []),
+    ...descendants(child, tagName)
+  ])
+}
+
 function parseTable(html) {
-  const rows = []
-  let row
-  let cell
-  let cursor = 0
-  const structuralTag = /<(\/?)\s*(tr|th|td)\b([^>]*)>/gi
-
-  const closeCell = () => {
-    if (!cell) return
-    row ||= []
-    row.push({
-      value: inlineMarkdown(cell.html),
-      header: cell.tag === 'th',
-      colspan: Math.max(1, Number.parseInt(attribute(cell.attributes, 'colspan') || '1', 10))
-    })
-    cell = undefined
-  }
-  const closeRow = () => {
-    closeCell()
-    if (row?.length) rows.push(row)
-    row = undefined
-  }
-
-  for (const match of html.matchAll(structuralTag)) {
-    if (cell) cell.html += html.slice(cursor, match.index)
-    const closing = Boolean(match[1])
-    const tag = match[2].toLowerCase()
-    if (tag === 'tr') {
-      if (closing) closeRow()
-      else {
-        closeRow()
-        row = []
-      }
-    } else if (closing) closeCell()
-    else {
-      closeCell()
-      row ||= []
-      cell = { tag, attributes: match[3], html: '' }
-    }
-    cursor = match.index + match[0].length
-  }
-  if (cell) cell.html += html.slice(cursor)
-  closeRow()
-  return rows
+  const closedRows = html.replace(/(<tr\b[^>]*>)([^]*?)(?=<tr\b|<\/table>)/gi,
+    (_row, opening, content) => `${opening}${content}${/<\/tr>\s*$/i.test(content) ? '' : '</tr>'}`)
+  return descendants(parseFragment(closedRows), 'tr').map(row => row.childNodes
+    .filter(cell => cell.tagName === 'th' || cell.tagName === 'td')
+    .map(cell => ({
+      value: inlineNodes(cell.childNodes),
+      header: cell.tagName === 'th',
+      colspan: Math.max(1, Number.parseInt(cell.attrs.find(item => item.name === 'colspan')?.value || '1', 10))
+    })))
 }
 
 function expandRows(rows) {
