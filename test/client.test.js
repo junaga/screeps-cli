@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { WebSocketServer } from 'ws'
 import {
-  createClient, createHttpClient, createLiveSocket, discoverShard,
+  createClient, createHttpClient, createLiveSocket, discoverShard, hydrateMessageUsers,
   isOfficialServerUrl, marketItems, openRoomSubscription, playerId, shardItems
 } from '../src/client.js'
 import { writeConfig } from '../src/config.js'
@@ -36,6 +36,19 @@ test('resolves message recipients from usernames to database IDs', async () => {
   const api = { async userFind(username) { return { user: username === 'Alice' ? { _id: 'alice-id' } : null } } }
   assert.equal(await playerId(api, 'Alice'), 'alice-id')
   await assert.rejects(playerId(api, 'Missing'), /Player @Missing was not found/)
+})
+
+test('hydrates private-server message respondents omitted from the index', async () => {
+  const api = {
+    async userFindById(id) {
+      return { user: id === 'other-id' ? { _id: id, username: 'Alice' } : {} }
+    }
+  }
+  const response = await hydrateMessageUsers(api, {
+    messages: [{ message: { user: 'me', respondent: 'other-id', type: 'in', text: 'hello' } }],
+    users: { me: { _id: 'me', username: 'Ada' } }
+  })
+  assert.equal(response.users['other-id'].username, 'Alice')
 })
 
 test('discovers an occupied shard, then falls back to the busiest shard', async () => {

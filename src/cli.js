@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
 import { assertGameAction, powerCreepAction, runGameExpression } from './action.js'
-import { createClient, marketItems, openRoomSubscription, output, playerId, shardItems } from './client.js'
+import {
+  createClient, hydrateMessageUsers, marketItems, openRoomSubscription,
+  output, playerId, shardItems
+} from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatNumber, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
@@ -18,7 +21,7 @@ import { DOCS_MANIFEST, formatVersion } from './version.js'
 const TOP_HELP = /^\$ screeps --help\n\n([^]*?)^```/m
   .exec(await readFile(new URL('../README.md', import.meta.url), 'utf8'))[1].trimEnd()
 
-const intershardResources = new Set(Object.values(IntershardResources))
+const intershardResources = new Set([...Object.values(IntershardResources), 'token'])
 const docsDirectory = new URL('../docs/', import.meta.url)
 
 async function promptForDesktopLogin(url) {
@@ -205,8 +208,8 @@ async function liveRoom(api, room, options, ownUserId) {
   }
 }
 
-function objectExpression(id) {
-  return `(()=>{const o=Game.getObjectById(${JSON.stringify(id)});if(!o)return null;const type=o.structureType||(o.className?'power creep':o.body?'creep':o.mineralType?'mineral':o.depositType?'deposit':o.resourceType?'resource':o.level!=null&&o.progressTotal!=null?'controller':'object');return {id:o.id,type,name:o.name,pos:o.pos&&{room:o.pos.roomName,x:o.pos.x,y:o.pos.y},owner:o.owner?.username,hits:o.hits,hitsMax:o.hitsMax,level:o.level,progress:o.progress,progressTotal:o.progressTotal,ticksToLive:o.ticksToLive,fatigue:o.fatigue,store:o.store&&Object.fromEntries(Object.entries(o.store)),body:o.body?.map(p=>({type:p.type,hits:p.hits,boost:p.boost}))}})()`
+export function objectExpression(id) {
+  return `(()=>{const o=Game.getObjectById(${JSON.stringify(id)});if(!o)return null;const n=['ConstructionSite','Ruin','Tombstone','Nuke','Source','Mineral','Deposit','Resource','PowerCreep','Creep'],i=n.findIndex(x=>typeof globalThis[x]=='function'&&o instanceof globalThis[x]),v=o.toJSON();v.type=['construction site','ruin','tombstone','nuke','source','mineral','deposit','resource','power creep','creep'][i]||o.structureType||'object';v.pos={room:o.pos.roomName,x:o.pos.x,y:o.pos.y};delete v.room;return v})()`
 }
 
 async function objectSnapshot(api, id, options) {
@@ -217,11 +220,31 @@ async function objectSnapshot(api, id, options) {
   const lines = [`${object.type}${object.name ? ` ${object.name}` : ''}`]
   const identity = []
   if (object.pos) identity.push(`${object.pos.room} ${object.pos.x},${object.pos.y}`)
-  if (object.owner) identity.push(object.owner)
+  if (object.owner) identity.push(object.owner.username || object.owner)
   if (identity.length) lines.push(identity.join(' · '))
   const condition = []
   if (object.hits != null) condition.push(`${formatNumber(object.hits)}/${formatNumber(object.hitsMax)} hits`)
   if (object.store) condition.push(...Object.entries(object.store).map(([resource, amount]) => `${formatNumber(amount)} ${resource}`))
+  if (object.type === 'resource' && object.amount != null) condition.push(`${formatNumber(object.amount)} ${object.resourceType}`)
+  if (object.type === 'source') {
+    condition.push(`${formatNumber(object.energy)}/${formatNumber(object.energyCapacity)} energy`)
+    if (object.ticksToRegeneration != null) condition.push(`regenerates in ${formatNumber(object.ticksToRegeneration)} ticks`)
+  }
+  if (object.type === 'mineral') {
+    condition.push(`${formatNumber(object.mineralAmount)} ${object.mineralType}`)
+    if (object.density != null) condition.push(`density ${object.density}`)
+    if (object.ticksToRegeneration != null) condition.push(`regenerates in ${formatNumber(object.ticksToRegeneration)} ticks`)
+  }
+  if (object.type === 'deposit') {
+    condition.push(object.depositType)
+    if (object.cooldown != null) condition.push(`${formatNumber(object.cooldown)} cooldown`)
+    if (object.lastCooldown != null) condition.push(`${formatNumber(object.lastCooldown)} last cooldown`)
+  }
+  if (object.ticksToDecay != null) condition.push(`${formatNumber(object.ticksToDecay)} ticks to decay`)
+  if (object.timeToLand != null) condition.push(`lands in ${formatNumber(object.timeToLand)} ticks`)
+  if (object.type === 'construction site' && object.structureType) condition.push(object.structureType)
+  if (object.structure?.structureType) condition.push(`destroyed ${object.structure.structureType}`)
+  if (object.creep?.name) condition.push(`remains of ${object.creep.name}`)
   if (object.level != null) condition.push(`level ${object.level}`)
   if (object.progress != null) condition.push(`${formatNumber(object.progress)}/${formatNumber(object.progressTotal)} progress`)
   if (object.ticksToLive != null) condition.push(`${formatNumber(object.ticksToLive)} ticks left`)
@@ -235,7 +258,9 @@ async function playerSnapshot(api, player, options) {
   const [profileResult, controlResult, powerResult] = await Promise.allSettled([
     api.userFind(player), api.leaderboardFind(player, 'world'), api.leaderboardFind(player, 'power')
   ])
-  if (profileResult.status === 'rejected' || !profileResult.value?.user) throw new Error(`Player @${player} was not found.`)
+  if (profileResult.status === 'rejected' || !profileResult.value?.user?._id || !profileResult.value.user.username) {
+    throw new Error(`Player @${player} was not found.`)
+  }
   const result = {
     player: profileResult.value.user,
     control: controlResult.status === 'fulfilled' ? controlResult.value : null,
@@ -689,7 +714,9 @@ export async function run(program, argv) {
     .usage('[@player]')
     .action(withClient(async ({ api }, player, options) => {
       const username = player && playerName(player)
-      const response = username ? await api.userMessagesList(await playerId(api, username)) : await api.userMessagesIndex()
+      const response = username
+        ? await api.userMessagesList(await playerId(api, username))
+        : await hydrateMessageUsers(api, await api.userMessagesIndex())
       respond(options, { player: username || null, messages: response.messages || [], users: response.users || {} },
         formatMessages(response, username))
     }))

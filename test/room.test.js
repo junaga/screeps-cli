@@ -85,6 +85,19 @@ test('renders terrain and objects at their coordinates', () => {
   assert.equal(mapRow.slice(3, 5), '#S')
 })
 
+test('renders and describes dropped non-energy resources', () => {
+  const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
+  const resource = { _id: 'drop', type: 'energy', resourceType: 'H', H: 700, x: 2, y: 3 }
+  const rendered = renderRoom({ name: 'W0N0', terrain, objects: [resource], color: false })
+  assert.equal(rendered.split('\n')[6][5], '$')
+  assert.match(renderTile({ name: 'W0N0', x: 2, y: 3, terrain, objects: [resource] }), /dropped H · 700 H/)
+
+  const state = new Map([['drop', resource]])
+  assert.deepEqual(describeRoomChanges(state, { drop: { H: 650 } }, {}, { targetId: 'drop' }), [
+    'dropped H changed 700 -> 650.'
+  ])
+})
+
 test('renders a fixed live frame for a human terminal', () => {
   const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
   const rendered = renderLiveRoomFrame({ name: 'W0N0', terrain, objects: [], gameTime: 42, color: false })

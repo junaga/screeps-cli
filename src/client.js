@@ -211,6 +211,23 @@ export async function playerId(api, username) {
   return id
 }
 
+export async function hydrateMessageUsers(api, response) {
+  const users = { ...(response?.users || {}) }
+  const ids = new Set()
+  for (const entry of response?.messages || []) {
+    const message = entry.message || entry
+    const id = message.respondent || message.user
+    if (id && !users[id]) ids.add(id)
+  }
+  await Promise.all([...ids].map(async id => {
+    try {
+      const user = (await api.userFindById(id)).user
+      if (user?._id && user.username) users[id] = user
+    } catch {}
+  }))
+  return { ...response, users }
+}
+
 export async function discoverShard(api) {
   const me = await api.authMe()
   const { shards = {} } = await api.userRooms(me._id)

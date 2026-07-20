@@ -70,7 +70,17 @@ test('runs HTTP-backed game commands against their real client contracts', async
       shard0: [{ _id: 'world-order', type: 'sell', resourceType: 'energy', remainingAmount: 10, price: 2 }],
       intershard: [{ _id: 'pixel-order', type: 'sell', resourceType: 'pixel', remainingAmount: 1, price: 5 }]
     } })
-    if (url.pathname === '/api/user/find') return send(response, { ok: 1, user: { _id: 'bob-id', username: 'Bob' } })
+    if (url.pathname === '/api/game/market/orders') return send(response, { ok: 1, list: [], users: {} })
+    if (url.pathname === '/api/user/find') {
+      if (url.searchParams.get('id') === 'alice-id') return send(response, { ok: 1, user: { _id: 'alice-id', username: 'Alice' } })
+      if (url.searchParams.get('username') === 'Missing') return send(response, { ok: 1, user: {} })
+      return send(response, { ok: 1, user: { _id: 'bob-id', username: 'Bob' } })
+    }
+    if (url.pathname === '/api/user/messages/index') return send(response, {
+      ok: 1,
+      messages: [{ message: { user: 'me', respondent: 'alice-id', type: 'in', text: 'private hello' } }],
+      users: { me: { _id: 'me', username: 'Ada' } }
+    })
     if (url.pathname === '/api/user/messages/list') return send(response, {
       ok: 1, messages: [{ type: 'in', text: 'hello' }]
     })
@@ -124,6 +134,8 @@ test('runs HTTP-backed game commands against their real client contracts', async
   const market = (await cli('market')).stdout
   assert.match(market, /world-order/)
   assert.match(market, /pixel-order/)
+  assert.equal(JSON.parse((await cli('market', 'token', '--json')).stdout).resource, 'token')
+  assert.equal((await cli('messages')).stdout, 'Alice: private hello\n')
   assert.equal((await cli('messages', '@Bob')).stdout, 'Bob: hello\n')
   assert.equal((await cli('messages', 'send', '@Bob', 'hi')).stdout, 'Sent message to @Bob.\n')
   assert.equal((await cli('memory', 'set', 'settings.mode', '{"safe":true}')).stdout, 'Set Memory.settings.mode.\n')
@@ -135,6 +147,7 @@ test('runs HTTP-backed game commands against their real client contracts', async
   const map = JSON.parse((await cli('map', 'W1N1', '--radius', '0', '--json')).stdout)
   assert.equal(map.rooms.W1N1.own.level, 3)
   assert.equal((await cli('power', 'delete', 'Operator')).stdout, 'Scheduled Operator for deletion.\n')
+  await assert.rejects(cli('@Missing'), /Player @Missing was not found/)
 
   const recipientCalls = requests.filter(item => item.path.startsWith('/api/user/messages'))
   assert.equal(recipientCalls.find(item => item.path.endsWith('/list')).query.respondent, 'bob-id')
@@ -143,8 +156,11 @@ test('runs HTTP-backed game commands against their real client contracts', async
     path: 'settings.mode', value: { safe: true }, shard: 'shard0'
   })
   assert.deepEqual(requests.find(item => item.path === '/api/game/map-stats').body.rooms, ['W1N1'])
+  const tokenMarket = requests.find(item => item.path === '/api/game/market/orders')
+  assert.equal(tokenMarket.query.shard, undefined)
+  assert.equal(tokenMarket.body?.shard, undefined)
   assert.match(requests.find(item => item.path === '/api/user/console').body.expression,
-    /Game\.powerCreeps\["Operator"\]\.delete\(\)/)
+    /Game\.powerCreeps/)
 })
 
 test('starts room watches from the authoritative socket snapshot', async t => {

@@ -14,9 +14,17 @@ function decodeConsoleText(value) {
 export async function runGameExpression(api, expression, shard) {
   const marker = `screeps-cli:${randomUUID()}:`
   let resolveResult
-  const result = new Promise(resolve => { resolveResult = resolve })
+  let rejectResult
+  const result = new Promise((resolve, reject) => {
+    resolveResult = resolve
+    rejectResult = reject
+  })
   const receive = event => {
     if (shard && event.data.shard && event.data.shard !== shard) return
+    if (event.data.error) {
+      rejectResult(new Error(`Game console failed: ${event.data.error}`))
+      return
+    }
     for (const line of event.data.messages?.log || []) {
       const text = String(line)
       const offset = text.indexOf(marker)
@@ -28,18 +36,23 @@ export async function runGameExpression(api, expression, shard) {
   let timer
   try {
     await api.socket.connect()
-    const wrapped = `(()=>{try{const value=(${expression});console.log(${JSON.stringify(marker)}+JSON.stringify({value}))}catch(error){console.log(${JSON.stringify(marker)}+JSON.stringify({error:String(error?.stack||error)}))}})()`
-    await api.userConsole(wrapped, shard)
+    const wrapped = wrapGameExpression(expression, marker)
     const timeout = new Promise((_resolve, reject) => {
       timer = setTimeout(() => reject(new Error('The action was submitted, but its game result did not arrive. Check before retrying.')), resultTimeout)
     })
+    await api.userConsole(wrapped, shard)
     const response = JSON.parse(await Promise.race([result, timeout]))
     if (response.error) throw new Error(`Game expression failed: ${response.error}`)
     return response.value
   } finally {
     clearTimeout(timer)
+    try { await api.socket.unsubscribeUserConsole?.(receive) } catch {}
     api.socket.disconnect()
   }
+}
+
+export function wrapGameExpression(expression, marker) {
+  return `(()=>{try{let s=new Set,v=(0,eval)(${JSON.stringify(expression)}),j=JSON.stringify({value:v},(_,x)=>typeof x=='bigint'?x+'n':typeof x=='function'||typeof x=='symbol'?String(x):typeof x=='number'&&!isFinite(x)?String(x):typeof x=='undefined'?'undefined':x&&typeof x=='object'?(s.has(x)?'[Circular]':s.add(x)&&x):x);console.log(${JSON.stringify(marker)}+j)}catch(e){console.log(${JSON.stringify(marker)}+JSON.stringify({error:String(e.stack||e)}))}})()`
 }
 
 export function assertGameAction(result) {

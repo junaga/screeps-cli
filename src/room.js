@@ -6,12 +6,12 @@ const GLYPHS = {
   link: 'k', lab: 'l', factory: 'F', observer: 'O', powerSpawn: 'Q', nuker: 'N',
   road: '.', constructedWall: 'W', rampart: 'R', extractor: 'x', portal: 'o',
   keeperLair: 'K', invaderCore: 'I', powerBank: 'B', constructionSite: '+',
-  tombstone: 't', ruin: 'r', nuke: '*', creep: '@', powerCreep: '&'
+  tombstone: 't', ruin: 'r', nuke: '*', energy: '$', creep: '@', powerCreep: '&'
 }
 
 const PRIORITY = {
   road: 1, rampart: 2, constructedWall: 3, container: 4, constructionSite: 5,
-  creep: 20, powerCreep: 21, spawn: 15, controller: 14, source: 13, mineral: 12
+  energy: 10, creep: 20, powerCreep: 21, spawn: 15, controller: 14, source: 13, mineral: 12
 }
 
 export function decodeTerrain(response) {
@@ -64,7 +64,7 @@ export function renderRoom({ name, terrain, objects, ownUserId, gameTime, color 
     }
     lines.push(row)
   }
-  lines.push('Legend: # wall  ~ swamp  . road  S source  M mineral  C controller  P spawn  @ your creep  ! hostile  + site')
+  lines.push('Legend: # wall  ~ swamp  . road  S source  M mineral  C controller  P spawn  $ resource  @ your creep  ! hostile  + site')
   return lines.join('\n')
 }
 
@@ -72,7 +72,7 @@ export function renderLiveRoomFrame(room) {
   const lines = renderRoom(room).split('\n')
   lines[0] += '  live · Ctrl-C to close'
   lines[lines.length - 1] = '# wall  ~ swamp  . road  S source  M mineral'
-  lines.push('C controller  P spawn  @ yours  ! hostile  + site')
+  lines.push('C controller  P spawn  $ resource  @ yours  ! hostile  + site')
   return lines.join('\n')
 }
 
@@ -89,15 +89,20 @@ function owner(object, users, ownUserId) {
 const amount = value => formatNumber(value, '?')
 
 function describeObject(object, users = {}, ownUserId) {
-  const title = `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
+  const title = object.type === 'energy'
+    ? `dropped ${object.resourceType || 'resource'}`
+    : `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
   const details = [owner(object, users, ownUserId)]
-  const energy = object.store?.energy ?? object.energy
+  const held = resources(object)
+  const energy = held.energy
   const capacity = object.storeCapacity ?? object.storeCapacityResource?.energy ?? object.energyCapacity
   if (energy != null) details.push(`${amount(energy)}${capacity == null ? '' : `/${amount(capacity)}`} energy`)
+  for (const [resource, quantity] of Object.entries(held)) {
+    if (resource !== 'energy') details.push(`${amount(quantity)} ${resource}`)
+  }
   if (object.hits != null) details.push(`${amount(object.hits)}/${amount(object.hitsMax)} hits`)
   if (object.level != null) details.push(`level ${object.level}`)
   if (object.progress != null) details.push(`${amount(object.progress)}/${amount(object.progressTotal)} progress`)
-  if (object.mineralType) details.push(`${amount(object.mineralAmount)} ${object.mineralType}`)
   if (object.body?.length) {
     const parts = Object.entries(Object.groupBy(object.body, part => String(part.type).toUpperCase()))
       .map(([part, entries]) => `${entries.length} ${part}`)
@@ -118,6 +123,7 @@ export function renderTile({ name, x, y, terrain, objects, users, ownUserId }) {
 }
 
 function objectName(object) {
+  if (object.type === 'energy') return `dropped ${object.resourceType || 'resource'}`
   return `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
 }
 
@@ -130,6 +136,7 @@ function resources(object) {
   if (object.energy != null && values.energy == null) values.energy = object.energy
   if (object.mineralAmount != null && object.mineralType) values[object.mineralType] = object.mineralAmount
   if (object.amount != null && object.resourceType) values[object.resourceType] = object.amount
+  if (object.resourceType && object[object.resourceType] != null) values[object.resourceType] = object[object.resourceType]
   return values
 }
 
@@ -152,12 +159,15 @@ function movementAndDamage(previous, current, patch, name, detailed) {
 function resourceAndProgress(previous, current, patch, name, detailed) {
   if (!detailed) return []
   const lines = []
-  if (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null) {
+  const resourceType = current.resourceType || previous.resourceType
+  if (patch.store || patch.energy != null || patch.mineralAmount != null || patch.amount != null ||
+      (resourceType && Object.hasOwn(patch, resourceType))) {
     const before = resources(previous)
     const after = resources(current)
     for (const resource of new Set([...Object.keys(before), ...Object.keys(after)])) {
       if (before[resource] !== after[resource]) {
-        lines.push(`${name} ${resource} changed ${amount(before[resource] ?? 0)} -> ${amount(after[resource] ?? 0)}.`)
+        const label = current.type === 'energy' && current.resourceType === resource ? name : `${name} ${resource}`
+        lines.push(`${label} changed ${amount(before[resource] ?? 0)} -> ${amount(after[resource] ?? 0)}.`)
       }
     }
   }
