@@ -1,3 +1,4 @@
+import { on, once } from 'node:events'
 import WebSocket from 'ws'
 import { ScreepsHttpClient } from 'screeps-api'
 import { getConnection } from './config.js'
@@ -37,29 +38,22 @@ export async function exchangeSocketToken({ url, token, serverPassword, timeout 
   if (!token) return null
 
   const headers = serverPassword ? { 'X-Server-Password': serverPassword } : undefined
-  return new Promise(resolve => {
-    const socket = new WebSocket(socketUrl(url), { headers })
-    let timer
-    let settled = false
-
-    const finish = nextToken => {
-      if (settled) return
-      settled = true
-      clearTimeout(timer)
-      if (socket.readyState === WebSocket.OPEN) socket.close()
-      else if (socket.readyState === WebSocket.CONNECTING) socket.terminate()
-      resolve(nextToken)
-    }
-
-    timer = setTimeout(() => finish(null), timeout)
-    socket.once('open', () => socket.send(`auth ${token}`))
-    socket.on('message', data => {
+  const socket = new WebSocket(socketUrl(url), { headers })
+  const signal = AbortSignal.timeout(timeout)
+  try {
+    await once(socket, 'open', { signal })
+    const messages = on(socket, 'message', { signal })
+    socket.send(`auth ${token}`)
+    for await (const [data] of messages) {
       const match = data.toString().match(/^auth (ok|failed)(?: (.+))?$/)
-      if (match) finish(match[1] === 'ok' ? (match[2] || token) : null)
-    })
-    socket.once('error', () => finish(null))
-    socket.once('unexpected-response', () => finish(null))
-  })
+      if (match) return match[1] === 'ok' ? (match[2] || token) : null
+    }
+  } catch {
+    return null
+  } finally {
+    if (socket.readyState === WebSocket.OPEN) socket.close()
+    else if (socket.readyState === WebSocket.CONNECTING) socket.terminate()
+  }
 }
 
 export function createLiveSocket(httpApi, connection, shard) {
