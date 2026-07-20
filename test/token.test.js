@@ -12,12 +12,12 @@ test('extracts newest unique private-server desktop sessions', () => {
   const first = 'a'.repeat(40)
   const second = 'b'.repeat(40)
   const data = Buffer.from(`noise auth+\u0000"${first}" more auth+\u0000"${second}" again auth+\u0000"${first}"`, 'latin1')
-  assert.deepEqual(extractSessionCandidates([data]), [second, first])
+  assert.deepEqual(extractSessionCandidates([data]), [first, second])
 })
 
 test('extracts the shared password for the selected server only', () => {
   const data = Buffer.from([
-    '{"settings":{"protocol":"http","host":"example.test","port":"21025","password":"first-secret","prefix":""}}',
+    '{"settings":{"protocol":"http","host":"EXAMPLE.TEST","port":"21025","password":"first-secret","prefix":""}}',
     '{"settings":{"protocol":"http","host":"example.test","port":21026,"password":"second-secret","prefix":"/world"}}'
   ].join('\0'))
   assert.equal(extractServerPassword([data], 'http://example.test:21025'), 'first-secret')

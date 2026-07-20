@@ -275,10 +275,12 @@ export async function openRoomSubscription(socket, room, shard, onUpdate, { time
   const reconnectFailed = error => rejectInitial(error)
   socket.on('message', receiveMessage)
   socket.on('reconnectFailed', reconnectFailed)
-  await socket.subscribeRoom(room, shard, receive)
 
   let timer
+  let subscribed = false
   try {
+    await socket.subscribeRoom(room, shard, receive)
+    subscribed = true
     const expired = new Promise((_resolve, reject) => {
       timer = setTimeout(() => {
         const error = new Error(`The server did not send an initial live snapshot for ${room}.`)
@@ -290,7 +292,9 @@ export async function openRoomSubscription(socket, room, shard, onUpdate, { time
   } catch (error) {
     socket.off('message', receiveMessage)
     socket.off('reconnectFailed', reconnectFailed)
-    await socket.unsubscribeRoom(room, shard, receive)
+    if (subscribed) {
+      try { await socket.unsubscribeRoom(room, shard, receive) } catch {}
+    }
     throw error
   } finally {
     clearTimeout(timer)

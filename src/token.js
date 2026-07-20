@@ -26,7 +26,14 @@ export function extractSessionCandidates(buffers) {
     const text = buffer.toString('latin1')
     for (const match of text.matchAll(/auth\+[^\x20-\x7e]*"([A-Za-z0-9_+/.=-]{40})"/g)) found.push(match[1])
   }
-  return [...new Set(found)].reverse()
+  const unique = []
+  const seen = new Set()
+  for (const token of found.toReversed()) {
+    if (seen.has(token)) continue
+    seen.add(token)
+    unique.push(token)
+  }
+  return unique
 }
 
 function jsonString(value) {
@@ -51,7 +58,7 @@ export function extractServerPassword(buffers, serverUrl) {
       const start = Math.max(0, text.lastIndexOf('{', match.index))
       const closing = text.indexOf('}', match.index)
       const record = text.slice(start, closing < 0 ? match.index + 512 : closing + 1)
-      if (jsonString(match[1]) !== endpoint.hostname) continue
+      if (jsonString(match[1]).toLowerCase() !== endpoint.hostname.toLowerCase()) continue
       if (String(field(record, 'port')) !== expectedPort) continue
       const protocol = field(record, 'protocol')
       if (protocol && protocol.replace(/:$/, '') !== endpoint.protocol.replace(/:$/, '')) continue
@@ -74,7 +81,8 @@ async function findStoragePath(explicitPath) {
 }
 
 async function readStorage(path) {
-  const entries = await readdir(path, { withFileTypes: true })
+  const entries = (await readdir(path, { withFileTypes: true }))
+    .toSorted((left, right) => left.name.localeCompare(right.name))
   return (await Promise.all(entries
     .filter(entry => entry.isFile() && entry.name !== 'LOCK')
     .map(entry => readFile(join(path, entry.name)).catch(() => null)))).filter(Boolean)

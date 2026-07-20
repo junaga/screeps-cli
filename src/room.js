@@ -89,8 +89,9 @@ function owner(object, users, ownUserId) {
 const amount = value => formatNumber(value, '?')
 
 function describeObject(object, users = {}, ownUserId) {
+  const droppedType = object.resourceType || (object.type === 'energy' ? 'energy' : 'resource')
   const title = object.type === 'energy'
-    ? `dropped ${object.resourceType || 'resource'}`
+    ? `dropped ${droppedType}`
     : `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
   const details = [owner(object, users, ownUserId)]
   const held = resources(object)
@@ -123,7 +124,7 @@ export function renderTile({ name, x, y, terrain, objects, users, ownUserId }) {
 }
 
 function objectName(object) {
-  if (object.type === 'energy') return `dropped ${object.resourceType || 'resource'}`
+  if (object.type === 'energy') return `dropped ${object.resourceType || 'energy'}`
   return `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
 }
 
@@ -166,7 +167,8 @@ function resourceAndProgress(previous, current, patch, name, detailed) {
     const after = resources(current)
     for (const resource of new Set([...Object.keys(before), ...Object.keys(after)])) {
       if (before[resource] !== after[resource]) {
-        const label = current.type === 'energy' && current.resourceType === resource ? name : `${name} ${resource}`
+        const droppedType = current.resourceType || (current.type === 'energy' ? 'energy' : null)
+        const label = current.type === 'energy' && droppedType === resource ? name : `${name} ${resource}`
         lines.push(`${label} changed ${amount(before[resource] ?? 0)} -> ${amount(after[resource] ?? 0)}.`)
       }
     }

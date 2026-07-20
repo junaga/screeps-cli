@@ -217,7 +217,8 @@ async function objectSnapshot(api, id, options) {
   if (!object) throw new Error(`Object ${id} is not visible.`)
   if (options.silent) return object
   if (options.json) return output(object, { json: true })
-  const lines = [`${object.type}${object.name ? ` ${object.name}` : ''}`]
+  const title = object.type === 'resource' ? `dropped ${object.resourceType}` : `${object.type}${object.name ? ` ${object.name}` : ''}`
+  const lines = [title]
   const identity = []
   if (object.pos) identity.push(`${object.pos.room} ${object.pos.x},${object.pos.y}`)
   if (object.owner) identity.push(object.owner.username || object.owner)
@@ -242,6 +243,7 @@ async function objectSnapshot(api, id, options) {
   }
   if (object.ticksToDecay != null) condition.push(`${formatNumber(object.ticksToDecay)} ticks to decay`)
   if (object.timeToLand != null) condition.push(`lands in ${formatNumber(object.timeToLand)} ticks`)
+  if (object.launchRoomName) condition.push(`launched from ${object.launchRoomName}`)
   if (object.type === 'construction site' && object.structureType) condition.push(object.structureType)
   if (object.structure?.structureType) condition.push(`destroyed ${object.structure.structureType}`)
   if (object.creep?.name) condition.push(`remains of ${object.creep.name}`)

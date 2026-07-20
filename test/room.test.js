@@ -98,6 +98,16 @@ test('renders and describes dropped non-energy resources', () => {
   ])
 })
 
+test('names legacy dropped energy records without a resourceType', () => {
+  const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
+  const resource = { _id: 'drop', type: 'energy', energy: 50, x: 2, y: 3 }
+  assert.match(renderTile({ name: 'W0N0', x: 2, y: 3, terrain, objects: [resource] }), /dropped energy · 50 energy/)
+  const state = new Map([['drop', resource]])
+  assert.deepEqual(describeRoomChanges(state, { drop: { energy: 25 } }, {}, { targetId: 'drop' }), [
+    'dropped energy changed 50 -> 25.'
+  ])
+})
+
 test('renders a fixed live frame for a human terminal', () => {
   const terrain = Array.from({ length: 50 }, () => Array(50).fill(0))
   const rendered = renderLiveRoomFrame({ name: 'W0N0', terrain, objects: [], gameTime: 42, color: false })
