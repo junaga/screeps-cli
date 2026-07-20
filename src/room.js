@@ -26,7 +26,7 @@ export function decodeTerrain(response) {
   return Array.from({ length: 50 }, (_, y) => Array.from({ length: 50 }, (_, x) => Number(encoded[y * 50 + x]) || 0))
 }
 
-export function indexObjects(objects) {
+function indexObjects(objects) {
   const list = Array.isArray(objects) ? objects : Object.values(objects || {}).filter(Boolean)
   const cells = new Map()
   for (const object of list) {
@@ -88,7 +88,7 @@ function amount(value) {
   return Number.isFinite(value) ? new Intl.NumberFormat('en').format(value) : '?'
 }
 
-export function describeObject(object, users = {}, ownUserId) {
+function describeObject(object, users = {}, ownUserId) {
   const title = `${words(object.type)}${object.name ? ` ${object.name}` : ''}`
   const details = [owner(object, users, ownUserId)]
   const energy = object.store?.energy ?? object.energy
@@ -126,7 +126,7 @@ function position(value) {
 }
 
 function resources(object) {
-  const values = { ...(object.store || {}) }
+  const values = { ...object.store }
   if (object.energy != null && values.energy == null) values.energy = object.energy
   if (object.mineralAmount != null && object.mineralType) values[object.mineralType] = object.mineralAmount
   if (object.amount != null && object.resourceType) values[object.resourceType] = object.amount
@@ -246,7 +246,7 @@ export function renderWorldMap(center, radius, response) {
 export function mergeRoomObjects(state, patches) {
   for (const [id, patch] of Object.entries(patches || {})) {
     if (patch === null) state.delete(id)
-    else state.set(id, { ...(state.get(id) || {}), ...patch })
+    else state.set(id, { ...state.get(id), ...patch })
   }
   return state
 }

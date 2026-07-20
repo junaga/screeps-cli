@@ -2,13 +2,13 @@ import { randomBytes } from 'node:crypto'
 import { access, readFile, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { assertServerCompatibility } from './compatibility.js'
 import { normalizeUrl, readConfig, writeConfig } from './config.js'
 import { createSessionToken, exchangeSocketToken } from './live.js'
+import { assertServerCompatibility } from './version.js'
 
 export { exchangeSocketToken } from './live.js'
 
-export function defaultClientStoragePaths() {
+function defaultClientStoragePaths() {
   if (process.platform === 'darwin') {
     return [join(homedir(), 'Library', 'Application Support', 'Screeps', 'Default', 'Local Storage', 'leveldb')]
   }
@@ -26,7 +26,7 @@ export function extractSessionCandidates(buffers) {
   const found = []
   for (const buffer of buffers) {
     const text = buffer.toString('latin1')
-    for (const match of text.matchAll(/auth\+[^\x20-\x7e]*"([A-Za-z0-9_+\/.=-]{40})"/g)) found.push(match[1])
+    for (const match of text.matchAll(/auth\+[^\x20-\x7e]*"([A-Za-z0-9_+/.=-]{40})"/g)) found.push(match[1])
   }
   return [...new Set(found)].reverse()
 }
@@ -92,7 +92,7 @@ async function setAccountPassword(connection, password) {
 async function saveLogin(config, connection) {
   config.current = connection.url
   config.servers ||= {}
-  config.servers[connection.url] = { ...(config.servers[connection.url] || {}), ...connection }
+  config.servers[connection.url] = { ...config.servers[connection.url], ...connection }
   delete config.servers[connection.url].liveToken
   await writeConfig(config)
 }
@@ -116,7 +116,7 @@ async function prepareLiveLogin({ connection, config, identity, token }) {
   return { password, passwordCreated }
 }
 
-export async function validateToken({ url, token, serverPassword, username }) {
+async function validateToken({ url, token, serverPassword, username }) {
   if (!token) return null
   const { response, body } = await requestJson(`${url.replace(/\/$/, '')}/api/auth/me`, {
     headers: authHeaders({ token, serverPassword })

@@ -2,7 +2,7 @@ import { chmod, mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promi
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-export const configPath = () => process.env.SCREEPS_CLI_CONFIG || join(homedir(), '.config', 'screeps-cli', 'config.json')
+const configPath = () => process.env.SCREEPS_CLI_CONFIG || join(homedir(), '.config', 'screeps-cli', 'config.json')
 
 function normalizeConfig(value = {}) {
   const servers = {}
@@ -40,7 +40,7 @@ export async function writeConfig(config) {
   }
 }
 
-export function environmentConnection() {
+function environmentConnection() {
   const values = {
     url: process.env.SCREEPS_URL,
     token: process.env.SCREEPS_TOKEN,

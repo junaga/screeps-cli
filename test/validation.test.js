@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { coordinate, flagColor, pageNumber, parseTarget, playerName, positiveNumber, roomName, roomPosition, selectedRoom } from '../src/validation.js'
+import { coordinate, flagColor, pageNumber, parseTarget, playerName, positiveNumber, roomName, roomPosition } from '../src/validation.js'
 
 test('validates game coordinates, colors, and pages', () => {
   assert.equal(coordinate('49'), 49)
@@ -13,12 +13,6 @@ test('validates game coordinates, colors, and pages', () => {
   assert.throws(() => pageNumber('-1'), /at least 0/)
   assert.throws(() => positiveNumber('0', 'Price'), /positive number/)
   assert.throws(() => positiveNumber('many', 'Price'), /positive number/)
-})
-
-test('selects an explicit room before SCREEPS_ROOM', () => {
-  assert.equal(selectedRoom('E4S1', { SCREEPS_ROOM: 'W1N1' }), 'E4S1')
-  assert.equal(selectedRoom(undefined, { SCREEPS_ROOM: 'W1N1' }), 'W1N1')
-  assert.throws(() => selectedRoom(undefined, {}), /--room <name> or SCREEPS_ROOM/)
 })
 
 test('parses rooms, positions, players, objects, and the empire target distinctly', () => {

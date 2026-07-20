@@ -1,16 +1,16 @@
 import { stderr, stdin, stdout } from 'node:process'
+import { readFile } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 import { IntershardResources } from 'screeps-api'
 import { assertGameAction, runGameExpression } from './action.js'
 import { createClient, output, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
-import { readDocsManifest, readDocsPage } from './docs.js'
 import { formatBody, formatMarketHistory, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from './format.js'
 import { compareModules, parseValue, readModules, writeModules } from './io.js'
 import { decodeTerrain, describeRoomChanges, mergeRoomObjects, renderLiveRoomFrame, renderRoom, renderTile, renderWorldMap, roomsAround } from './room.js'
 import { login } from './token.js'
 import { integer, pageNumber, parseTarget, playerName, positiveNumber, roomName } from './validation.js'
-import { formatVersion } from './version.js'
+import { DOCS_MANIFEST, formatVersion } from './version.js'
 
 const TOP_HELP = `Screeps — program a world that never stops.
 
@@ -50,6 +50,7 @@ Options:
 Run screeps <command> --help for actions and examples.`
 
 const intershardResources = new Set(Object.values(IntershardResources))
+const docsDirectory = new URL('../docs/', import.meta.url)
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -84,23 +85,11 @@ async function waitForInterrupt(socket) {
   })
 }
 
-function connectionOptions(command) {
-  let current = command
-  while (current.parent) current = current.parent
-  return current.opts()
-}
-
-function inheritedOptions(command) {
-  const commands = []
-  for (let current = command; current; current = current.parent) commands.unshift(current)
-  return Object.assign({}, ...commands.map(current => current.opts()))
-}
-
-function withClient(action, clientOptions = {}) {
+function withClient(action) {
   return async (...args) => {
     const command = args.at(-1)
-    const suppliedOptions = inheritedOptions(command)
-    const context = await createClient({ ...suppliedOptions, ...clientOptions })
+    const suppliedOptions = command.optsWithGlobals()
+    const context = await createClient(suppliedOptions)
     const options = { ...suppliedOptions, shard: context.shard }
     const operands = args.slice(0, command.registeredArguments.length)
     return action(context, ...operands, options, command)
@@ -347,7 +336,7 @@ async function watchRooms(api, targets, options) {
   for (const room of rooms) {
     const [objects, time] = await Promise.all([api.gameRoomObjects(room, options.shard), api.gameTime(options.shard)])
     states.set(room, new Map(objects.objects.map(object => [object._id, object])))
-    users.set(room, { ...(objects.users || {}) })
+    users.set(room, { ...objects.users })
     ticks.set(room, time.time)
   }
 
@@ -434,7 +423,7 @@ async function docsView(manifest, topic, options, command) {
   }
   const exact = manifest.pages.find(page => page.command === topic.toLowerCase())
   if (!exact) throw new Error(`Unknown documentation topic ${JSON.stringify(topic)}. Run screeps docs --help.`)
-  const markdown = await readDocsPage(exact.file)
+  const markdown = await readFile(new URL(exact.file, docsDirectory), 'utf8')
   if (options.json) return output({ topic: exact.command, title: exact.title, markdown }, { json: true })
   stdout.write(markdown)
 }
@@ -458,7 +447,7 @@ async function powerView(api, name, options) {
 }
 
 export async function run(program, argv) {
-  const docsManifest = await readDocsManifest()
+  const docsManifest = DOCS_MANIFEST
   program
     .name('screeps')
     .description('Screeps — program a world that never stops.')
@@ -666,15 +655,15 @@ export async function run(program, argv) {
       else output(`Sent message to @${username}.`)
     }))
 
-  const docs = program.command('docs [topic]')
+  program.command('docs [topic]')
     .description('read the bundled game documentation')
     .addHelpText('after', `\nOffline snapshot: ${docsManifest.builtAt} · screeps/docs ${docsManifest.revision.slice(0, 7)}\nOfficial docs:    ${docsManifest.site}\n\nTopics:\n${docsManifest.pages.map(page => `  ${page.command.padEnd(22)} ${page.title}`).join('\n')}`)
-    .action(async (topic, _options, command) => docsView(docsManifest, topic, inheritedOptions(command), command))
+    .action(async (topic, _options, command) => docsView(docsManifest, topic, command.optsWithGlobals(), command))
 
   program.command('login [server]')
     .description('connect and remember a Screeps server')
     .action(async (server, _options, command) => {
-      const options = connectionOptions(command)
+      const options = command.optsWithGlobals()
       const config = await readConfig()
       const selected = server || options.server || config.current || 'https://screeps.com'
       const result = await login({ server: selected, shard: options.shard, onDesktopRequired: promptForDesktopLogin })
@@ -688,7 +677,7 @@ export async function run(program, argv) {
   program.command('logout [server]')
     .description('remove a remembered login')
     .action(async (server, _options, command) => {
-      const options = connectionOptions(command)
+      const options = command.optsWithGlobals()
       const url = await forgetServer(server || options.server)
       if (options.json) output({ server: url, forgotten: true }, { json: true })
       else output(`Forgot the login for ${url}.`)

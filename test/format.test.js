@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { formatBody, formatMarketOrders, formatMessages, formatMyOrders, formatRooms, formatStatus } from '../src/format.js'
+import { formatBody, formatMarketOrders, formatMessages, formatMyOrders, formatStatus } from '../src/format.js'
 
 test('formats status as a short player summary', () => {
   const text = formatStatus({
@@ -15,8 +15,7 @@ test('formats status as a short player summary', () => {
   assert.equal(text, 'Ada at example.test:21025 · shard0 · tick 1,234\nRoom: E1S1\nCPU 100 · GCL progress 2 · Power 3 · 42 credits\nNeeds attention: 1 unread message.')
 })
 
-test('formats room and market empty states plainly', () => {
-  assert.equal(formatRooms({ rooms: [] }), 'You have no rooms.')
+test('formats market empty states plainly', () => {
   assert.equal(formatMarketOrders({ list: [] }, 'energy'), 'No energy orders.')
   assert.equal(formatMyOrders({ list: [] }), 'No active orders.')
 })

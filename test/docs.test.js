@@ -3,27 +3,33 @@ import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import packageInfo from '../package.json' with { type: 'json' }
-import { readDocsManifest, readDocsPage } from '../src/docs.js'
-import { CLI_VERSION, DOCS_BUILT_AT, DOCS_REVISION, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
+import docsManifest from '../docs/manifest.json' with { type: 'json' }
+import { assertServerCompatibility, CLI_VERSION, DOCS_BUILT_AT, DOCS_REVISION, DOCS_SITE, GAME_PROTOCOL } from '../src/version.js'
+
+const readDocsPage = file => readFile(new URL(`../docs/${file}`, import.meta.url), 'utf8')
 
 test('pins distinct CLI, game protocol, and official docs versions', async () => {
-  const manifest = await readDocsManifest()
   assert.equal(CLI_VERSION, packageInfo.version)
   assert.equal(GAME_PROTOCOL, 14)
-  assert.equal(manifest.gameProtocol, GAME_PROTOCOL)
-  assert.equal(manifest.site, DOCS_SITE)
-  assert.equal(manifest.revision, DOCS_REVISION)
-  assert.equal(manifest.builtAt, DOCS_BUILT_AT)
-  assert.match(manifest.builtAt, /^\d{4}-\d{2}-\d{2}$/)
+  assert.equal(docsManifest.gameProtocol, GAME_PROTOCOL)
+  assert.equal(docsManifest.site, DOCS_SITE)
+  assert.equal(docsManifest.revision, DOCS_REVISION)
+  assert.equal(docsManifest.builtAt, DOCS_BUILT_AT)
+  assert.match(docsManifest.builtAt, /^\d{4}-\d{2}-\d{2}$/)
   for (const range of Object.values(packageInfo.dependencies)) assert.match(range, /^\^/)
 })
 
+test('accepts only the supported Screeps protocol', () => {
+  assert.equal(assertServerCompatibility({ protocol: 14 }).protocol, 14)
+  assert.throws(() => assertServerCompatibility({ protocol: 15 }), /Unsupported Screeps protocol 15/)
+  assert.throws(() => assertServerCompatibility({}), /did not report/)
+})
+
 test('bundles clean authored guide pages without the generated API reference', async () => {
-  const manifest = await readDocsManifest()
-  assert.ok(manifest.pages.length > 25)
-  assert.ok(manifest.pages.some(page => page.command === 'cpu-limit'))
-  assert.ok(!manifest.pages.some(page => page.command === 'api'))
-  for (const page of manifest.pages) {
+  assert.ok(docsManifest.pages.length > 25)
+  assert.ok(docsManifest.pages.some(page => page.command === 'cpu-limit'))
+  assert.ok(!docsManifest.pages.some(page => page.command === 'api'))
+  for (const page of docsManifest.pages) {
     const markdown = await readDocsPage(page.file)
     assert.ok(markdown.startsWith(`# ${page.title}\n\n`), page.command)
     assert.doesNotMatch(markdown, /\{%|^title:/m, page.command)

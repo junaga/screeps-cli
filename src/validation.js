@@ -46,12 +46,6 @@ export function parseTarget(target, position) {
   throw new Error(`Unknown target "${target}". Use a room, object ID, or @player.`)
 }
 
-export function selectedRoom(option, environment = process.env) {
-  const room = option || environment.SCREEPS_ROOM
-  if (!room) throw new Error('Choose a room with --room <name> or SCREEPS_ROOM.')
-  return room
-}
-
 export function positiveNumber(value, label) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed) || parsed <= 0) throw new Error(`${label} must be a positive number.`)

@@ -17,12 +17,6 @@ export function formatStatus({ server, shard, tick, player, rooms, attention = [
   ].join('\n')
 }
 
-export function formatRooms(response) {
-  const rooms = response?.rooms || []
-  if (!rooms.length) return 'You have no rooms.'
-  return rooms.join('\n')
-}
-
 export function formatMessages(response, player) {
   const messages = response?.messages || []
   if (!messages.length) return 'No messages.'
@@ -47,27 +41,19 @@ export function formatBody(body = []) {
   return runs.map(run => `${run.count > 1 ? `${run.count} ` : ''}${run.type}`).join(' · ')
 }
 
-export function formatMarketOrders(response, resource) {
+function formatOrders(response, resource, empty) {
   const orders = response?.list || []
-  if (!orders.length) return `No ${resource} orders.`
+  if (!orders.length) return empty
   return orders.map(order => {
     const amount = order.remainingAmount ?? order.amount
     const room = order.roomName ? ` in ${order.roomName}` : ''
     const id = order._id || order.id
-    return `${id ? `${id}  ` : ''}${order.type} ${number(amount)} ${resource} at ${order.price}${room}`
+    return `${id ? `${id}  ` : ''}${order.type} ${number(amount)} ${resource || order.resourceType} at ${order.price}${room}`
   }).join('\n')
 }
 
-export function formatMyOrders(response) {
-  const orders = response?.list || []
-  if (!orders.length) return 'No active orders.'
-  return orders.map(order => {
-    const amount = order.remainingAmount ?? order.amount
-    const room = order.roomName ? ` in ${order.roomName}` : ''
-    const id = order._id || order.id
-    return `${id ? `${id}  ` : ''}${order.type} ${number(amount)} ${order.resourceType} at ${order.price}${room}`
-  }).join('\n')
-}
+export const formatMarketOrders = (response, resource) => formatOrders(response, resource, `No ${resource} orders.`)
+export const formatMyOrders = response => formatOrders(response, undefined, 'No active orders.')
 
 export function formatMarketHistory(response) {
   const entries = response?.list || []
