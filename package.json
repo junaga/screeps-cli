@@ -1,6 +1,6 @@
 {
   "name": "screeps-cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Play Screeps World from the terminal",
   "license": "MIT",
   "repository": "https://github.com/junaga/screeps-cli.git",
