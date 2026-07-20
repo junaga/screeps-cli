@@ -1,5 +1,6 @@
 import { stderr, stdin, stdout } from 'node:process'
 import { createInterface } from 'node:readline/promises'
+import { IntershardResources } from 'screeps-api'
 import { assertGameAction, runGameExpression } from './action.js'
 import { createClient, output, shardItems } from './client.js'
 import { forgetServer, normalizeUrl, readConfig } from './config.js'
@@ -47,6 +48,8 @@ Options:
   -V, --version                 show version information
 
 Run screeps <command> --help for actions and examples.`
+
+const intershardResources = new Set(Object.values(IntershardResources))
 
 async function promptForDesktopLogin(url) {
   if (!stdin.isTTY) {
@@ -559,7 +562,7 @@ export async function run(program, argv) {
     .usage('[resource]')
     .action(withClient(async ({ api }, resource, options) => {
       if (resource) {
-        const response = await api.gameMarketOrders(resource, options.shard)
+        const response = await api.gameMarketOrders(resource, intershardResources.has(resource) ? undefined : options.shard)
         if (options.json) output({ resource, orders: response.list || [], users: response.users || {} }, { json: true })
         else output(formatMarketOrders(response, resource))
         return
@@ -580,25 +583,27 @@ export async function run(program, argv) {
     market.command(`${type} <resource> <amount>`)
       .description(`create a ${type} order`)
       .requiredOption('--price <credits>', 'credits per unit')
-      .requiredOption('--from <room>', 'terminal room')
+      .option('--from <room>', 'terminal room')
       .action(withClient(async ({ api }, resource, amount, options) => {
         const totalAmount = integer(amount, 'Amount', { min: 1 })
         const price = positiveNumber(options.price, 'Price')
-        const room = roomName(options.from)
-        const order = { type, resourceType: resource, price, totalAmount, roomName: room }
+        const room = options.from && roomName(options.from)
+        if (intershardResources.has(resource) && room) throw new Error(`${resource} is account-wide and does not use --from.`)
+        if (!intershardResources.has(resource) && !room) throw new Error('Ordinary resources require --from <room>.')
+        const order = { type, resourceType: resource, price, totalAmount, ...(room ? { roomName: room } : {}) }
         await submitGameAction(api, `Game.market.createOrder(${JSON.stringify(order)})`, options.shard,
-          `Created a ${type} order for ${totalAmount} ${resource} at ${price} credits in ${room}.`, options)
+          `Created a ${type} order for ${totalAmount} ${resource} at ${price} credits${room ? ` in ${room}` : ''}.`, options)
       }))
   }
   market.command('deal <order> <amount>')
     .description('accept an existing order')
-    .requiredOption('--from <room>', 'terminal room paying the transaction cost')
+    .option('--from <room>', 'terminal room paying the transaction cost')
     .action(withClient(async ({ api }, order, amount, options) => {
       const quantity = integer(amount, 'Amount', { min: 1 })
-      const room = roomName(options.from)
-      const args = [order, quantity, room].map(JSON.stringify).join(',')
+      const room = options.from && roomName(options.from)
+      const args = [order, quantity, ...(room ? [room] : [])].map(JSON.stringify).join(',')
       await submitGameAction(api, `Game.market.deal(${args})`, options.shard,
-        `Completed ${quantity} units of order ${order} through ${room}.`, options)
+        `Completed ${quantity} units of order ${order}${room ? ` through ${room}` : ''}.`, options)
     }))
   market.command('price <order> <credits>')
     .description('change an order price')
